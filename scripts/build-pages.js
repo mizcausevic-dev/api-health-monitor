@@ -20,6 +20,7 @@ import { loadConfig } from '../src/config.js';
 import { PROBLEM_TYPES } from '../src/http/problem.js';
 import { staticPathFor } from '../public/js/static-path.js';
 import { exportHistory, importHistory, readJson } from './history.js';
+import { renderIncidentsAtom } from '../src/api/feed.js';
 import { recordTranscripts } from './transcripts.js';
 import { unservableFiles, secretValues, secretHits } from './publication-gate.js';
 
@@ -34,6 +35,7 @@ const { values: args } = parseArgs({
     // Incident transitions from THIS run, written outside the site for the
     // post-deploy notify job. Never inside --out.
     'alerts-out': { type: 'string' },
+    'public-url': { type: 'string', default: 'https://mizcausevic-dev.github.io/api-health-monitor' },
   },
 });
 
@@ -95,7 +97,7 @@ if (args['run-checks']) {
 rmSync(OUT, { recursive: true, force: true });
 cpSync('public', OUT, { recursive: true });
 const indexPath = join(OUT, 'index.html');
-writeFileSync(indexPath, readFileSync(indexPath, 'utf8').replace('<meta name="ahm-mode" content="live">', '<meta name="ahm-mode" content="static">'));
+writeFileSync(indexPath, readFileSync(indexPath, 'utf8').replace('<meta name="ahm-mode" content="live">', '<meta name="ahm-mode" content="static">').replace('href="/v1/feeds/incidents"', 'href="incidents.xml"'));
 
 // The snapshot is rendered as an ANONYMOUS reader of a keyed server, so it
 // contains exactly what a public reader of a self-hosted instance would see
@@ -122,6 +124,11 @@ try {
 }
 
 writeFileSync(join(OUT, 'openapi.json'), readFileSync(join(OUT, staticPathFor('/v1/openapi.json'))));
+// Atom feed, rendered by the same code as GET /v1/feeds/incidents from the
+// anonymous /v1/incidents response already written above.
+const siteUrl = args['public-url'].replace(/\/$/, '');
+const incidentList = JSON.parse(readFileSync(join(OUT, staticPathFor('/v1/incidents?limit=100')), 'utf8')).data.slice(0, 50);
+writeFileSync(join(OUT, 'incidents.xml'), renderIncidentsAtom(incidentList, { siteUrl, selfUrl: `${siteUrl}/incidents.xml` }));
 mkdirSync(join(OUT, 'data'), { recursive: true });
 const history = exportHistory(db, { sinceIso });
 writeFileSync(join(OUT, 'data', 'export.json'), JSON.stringify(history));

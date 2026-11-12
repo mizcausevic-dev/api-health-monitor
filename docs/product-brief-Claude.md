@@ -11,7 +11,7 @@ Status: portfolio build, v1.0.0, November 2026. Statements below are design inte
 7. **Conversion.** For the portfolio goal: a recruiter or client moves from the live page to the repository and from the README to the code and tests. For a self-hoster: `npm run demo` to a first custom monitor.
 8. **Revenue.** None directly (MIT). The plausible commercial paths are a hosted multi-probe version (checks from several regions, per-team auth) and consulting on API design and reliability reviews. Neither is built.
 9. **Launch.** Push repository, enable Pages via the workflow, confirm the first scheduled run publishes `gh-actions` checks, set topics and homepage, upload the social preview, then publish the article.
-10. **After launch.** Measure from GitHub traffic insights (views, unique visitors, clones, referrers) since the site carries no analytics by design. Shipped after launch: signed incident webhooks (JSON, Slack, Discord), per-monitor capture policy, a secret gate on the published site, and an honest error budget. Next in order: an Atom incident feed, a body-shape fingerprint for contract changes, env-based secret indirection for authenticated monitors, lease-based scheduling for multiple replicas, an async `202 Accepted` run-now, and multi-probe aggregation.
+10. **After launch.** Measure from GitHub traffic insights (views, unique visitors, clones, referrers) since the site carries no analytics by design. Shipped after launch: signed incident webhooks (JSON, Slack, Discord), per-monitor capture policy, a secret gate on the published site, and an honest error budget. Atom incident feed shipped the same day. Next in order: a body-shape fingerprint for contract changes, env-based secret indirection for authenticated monitors, lease-based scheduling for multiple replicas, an async `202 Accepted` run-now, and multi-probe aggregation.
 
 ## KPIs (declared before launch)
 
@@ -31,7 +31,7 @@ No GA4 events: the site intentionally sets no cookies and loads no third-party s
 | Frontend / backend architecture, data model | Met; see README Architecture |
 | Security | SSRF guard, auth model, CSP, redaction. AppSec review (9 findings) and release/supply-chain review (4 findings) run before publish; all addressed. preflight-security gates 1-7 run. |
 | Privacy | No personal data collected; no cookies; demo stores status and timing only |
-| QA | 45 automated tests (green on Node 22 and 24 in CI); mutation-checked redirect test; manual browser pass of each view and all 14 theme modes |
+| QA | 48 automated tests (green on Node 22 and 24 in CI); mutation-checked redirect test; manual browser pass of each view and all 14 theme modes |
 | Deployment | CI on Node 22 and 24; Pages workflow with pinned actions |
 | Observability | Structured JSON request logs with request IDs; `/v1/health` |
 | Analytics | Not instrumented by design (see above) |

@@ -124,6 +124,18 @@ export const openApiDocument = {
       },
     },
     '/v1/incidents/{id}': { parameters: [P.id], get: { tags: ['Incidents'], summary: 'Get an incident', operationId: 'getIncident', responses: { 200: { description: 'The incident.', content: json(ref('Incident')) }, ...common, ...notFound } } },
+    '/v1/feeds/incidents': {
+      get: {
+        tags: ['Incidents'], summary: 'Atom feed of incidents', operationId: 'getIncidentFeed',
+        description: 'Atom 1.0 (RFC 4287), newest 50 incidents, one entry per incident updated when it resolves. A separate resource rather than a content-negotiated view of /v1/incidents, so feed readers that send `Accept: */*` still receive Atom. Links use AHM_PUBLIC_URL when set.',
+        responses: {
+          200: { description: 'Atom feed.', content: { 'application/atom+xml': { schema: { type: 'string' } } } },
+          304: { description: 'Not modified.' },
+          406: problem('Accept excludes Atom/XML.'),
+          ...common,
+        },
+      },
+    },
     '/v1/overview': {
       get: {
         tags: ['Analytics'], summary: 'Dashboard read model across all monitors', operationId: 'getOverview',

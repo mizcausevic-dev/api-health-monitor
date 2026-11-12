@@ -5,6 +5,7 @@ import * as repo from '../db/repo.js';
 import { validateMonitor, mergePatch, redactHeaders, redactUrl, restoreRedacted, monitorInputOf, keepSafeHeaders, REDACTED } from './validate.js';
 import { WINDOWS, summarize, phaseBreakdown, statusCodes, histogram, series, apdexThreshold } from '../engine/stats.js';
 import { openApiDocument } from './openapi.js';
+import { renderIncidentsAtom } from './feed.js';
 
 // ------------------------------------------------------------------ helpers
 
@@ -337,6 +338,19 @@ export function registerRoutes(router, { db, config, scheduler, events, clock })
     if (!i) throw httpError('not-found', `Incident ${ctx.params.id} does not exist.`);
     return { body: i };
   });
+
+  // A feed is its own resource (not a content-negotiated view of
+  // /v1/incidents) so a reader that sends Accept: */* still gets Atom.
+  router.add('GET', '/v1/feeds/incidents', (ctx) => {
+    readQuery(ctx.query, {});
+    // AHM_PUBLIC_URL is preferred: the Host header is client-controlled.
+    const siteUrl = config.publicUrl || `http://${ctx.req.headers.host || 'localhost'}`;
+    const { items } = repo.listIncidents(db, { limit: 50 });
+    return {
+      body: renderIncidentsAtom(items, { siteUrl, selfUrl: `${siteUrl.replace(/\/$/, '')}/v1/feeds/incidents` }),
+      headers: { 'Content-Type': 'application/atom+xml; charset=utf-8' },
+    };
+  }, { produces: ['application/atom+xml', 'application/xml', 'text/xml', 'application/*'] });
 
   // --------------------------------------------------------------- overview
   // Aggregate read model for the dashboard: one request instead of 1 + 2N.

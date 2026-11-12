@@ -262,3 +262,60 @@ test('delivery honours Retry-After (capped) between attempts', async () => {
     await new Promise((r) => server.close(r));
   }
 });
+
+// -------------------------------------------------------------- Atom feed
+
+test('Atom feed: required elements, stable tag ids, hostile text escaped', async () => {
+  const { renderIncidentsAtom } = await import('../src/api/feed.js');
+  const hostile = 'got "<script>alert(1)</script> & \u0007bell ￾"';
+  const doc = renderIncidentsAtom(
+    [incident({ cause: hostile }), incident({ id: 'inc_01m7bbbbbbbbbbbbbbbbbbbbbb', state: 'resolved', resolved_at: '2026-11-12T10:30:00.000Z', duration_s: 1800 })],
+    { siteUrl: 'https://status.example.com/', selfUrl: 'https://status.example.com/incidents.xml' },
+  );
+  assert.match(doc, /^<\?xml version="1\.0" encoding="utf-8"\?>\n<feed xmlns="http:\/\/www\.w3\.org\/2005\/Atom">/);
+  for (const el of ['<id>tag:status.example.com,2026:incidents</id>', '<title>', '<updated>2026-11-12T10:30:00.000Z</updated>', '<author><name>', '<link rel="self" type="application/atom+xml" href="https://status.example.com/incidents.xml"/>']) assert.ok(doc.includes(el), el);
+  assert.ok(doc.includes('<id>tag:status.example.com,2026:incident/inc_01m7aaaaaaaaaaaaaaaaaaaaaa</id>'));
+  assert.ok(doc.includes('<title>Payments recovered after 30 min</title>'));
+  assert.ok(doc.includes('href="https://status.example.com/#/monitors/mon_x"'));
+  assert.ok(!doc.includes('<script>'), 'markup from a failing server is escaped');
+  assert.ok(doc.includes('&lt;script&gt;alert(1)&lt;/script&gt; &amp;'));
+  assert.ok(!/[\u0007￾]/.test(doc), 'characters XML 1.0 forbids are removed');
+  assert.ok(!/&(?!(amp|lt|gt|quot);)/.test(doc), 'every ampersand is an entity');
+  assert.equal((doc.match(/<entry>/g) || []).length, 2);
+});
+
+test('GET /v1/feeds/incidents: Atom content type, Accept negotiation, ETag, public URL', async () => {
+  const target = await startTarget();
+  const api = await startApi({ publicUrl: 'https://status.example.com' });
+  try {
+    const { json: m } = await api.call('POST', '/v1/monitors', { body: monitorBody(`${target.url}/fail`, { failure_threshold: 1 }) });
+    await api.call('POST', `/v1/monitors/${m.id}/checks`);
+    const feed = await api.call('GET', '/v1/feeds/incidents', { headers: { accept: 'application/atom+xml' } });
+    assert.equal(feed.status, 200);
+    assert.equal(feed.headers.get('content-type'), 'application/atom+xml; charset=utf-8');
+    assert.match(feed.text, /<title>Test monitor is down<\/title>/);
+    assert.match(feed.text, /href="https:\/\/status\.example\.com\/v1\/feeds\/incidents"/);
+    assert.equal((await api.call('GET', '/v1/feeds/incidents', { headers: { accept: '*/*' } })).status, 200, 'feed readers that send */* still get Atom');
+    const refused = await api.call('GET', '/v1/feeds/incidents', { headers: { accept: 'application/json' } });
+    assert.equal(refused.status, 406);
+    assert.match(refused.headers.get('content-type'), /problem\+json/);
+    const again = await api.call('GET', '/v1/feeds/incidents', { headers: { 'if-none-match': feed.headers.get('etag') } });
+    assert.equal(again.status, 304);
+    assert.equal((await api.call('GET', '/v1/feeds/incidents?format=rss')).status, 400);
+  } finally {
+    await api.close();
+    await target.close();
+  }
+});
+
+test('secret gate also scans XML, including XML-escaped values', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ahm-gate-xml-'));
+  try {
+    const secrets = secretValues({ AHM_SECRET_X: 'tok&en<9876>' }, []);
+    writeFileSync(join(dir, 'incidents.xml'), '<feed><title>tok&amp;en&lt;9876&gt;</title></feed>');
+    assert.deepEqual(secretHits(dir, secrets), ['env AHM_SECRET_X in incidents.xml']);
+    assert.deepEqual(unservableFiles(dir), [], '.xml is servable');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

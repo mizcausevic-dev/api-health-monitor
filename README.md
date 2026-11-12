@@ -22,7 +22,7 @@ The repository is built to show REST API design decisions in working code, each 
 | Push, not poll | Server-Sent Events at `/v1/events` with a 500-event ring buffer, so a reconnect with `Last-Event-ID` replays what was missed | [`events.js`](src/http/events.js) | `SSE...` |
 | Outbound safety | The SSRF guard runs inside the socket's DNS lookup, so the address that is validated is the address that is connected to | [`ssrf.js`](src/engine/ssrf.js) | `SSRF...` |
 
-`npm test` runs 45 tests (unit and real-HTTP integration) in about 1.5 seconds with Node's built-in runner.
+`npm test` runs 48 tests (unit and real-HTTP integration) in about 1.5 seconds with Node's built-in runner.
 
 ## What a check measures
 
@@ -59,6 +59,10 @@ Incident transitions (`incident.opened`, `incident.resolved`) are sent to one we
 | `AHM_PUBLIC_URL` | Optional base URL for the monitor link in the message. |
 
 Delivery goes through the same SSRF guard as checks, retries network errors, 408, 429 and 5xx at 0 s, 5 s, 30 s and 2 min (or the receiver's `Retry-After`, up to 60 s), stops on other 4xx, and holds at most 100 pending deliveries. The Pages notify job delivers in parallel with shorter backoff so it stays inside its 5-minute limit. The payload carries the incident (monitor, cause, failed-check count, times), never a response sample.
+
+### Incident feed
+
+Incidents are also published as an Atom 1.0 feed (RFC 4287): `GET /v1/feeds/incidents` on a running server, and [`incidents.xml`](https://mizcausevic-dev.github.io/api-health-monitor/incidents.xml) on the live snapshot, both rendered by [`feed.js`](src/api/feed.js). One entry per incident (stable `tag:` id), updated when it resolves. The feed is its own resource rather than a content-negotiated view of `/v1/incidents`, because many feed readers send `Accept: */*` and would otherwise get JSON. Cause strings come from failing servers, so every text node is XML-escaped and characters XML 1.0 forbids are dropped. The dashboard links it from the Incidents page and `<link rel="alternate">` makes it discoverable. Set `AHM_PUBLIC_URL` so links do not depend on the request's `Host` header.
 
 On the live snapshot, the build records the transitions from its own run, and a separate `notify` job delivers them only after the deploy succeeds. The webhook secrets are scoped to that job, and without them it exits cleanly. To get alerts from the demo, add `AHM_WEBHOOK_URL` and `AHM_WEBHOOK_SECRET` as repository secrets (and optionally an `AHM_WEBHOOK_FORMAT` variable).
 

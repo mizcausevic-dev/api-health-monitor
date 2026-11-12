@@ -71,14 +71,17 @@ export function noneMatch(header, etag) {
 
 const sha256 = (s) => createHash('sha256').update(s).digest();
 
-function acceptsJson(accept) {
+// True if the Accept header admits one of `types` (q=0 means "not this").
+function accepts(accept, types) {
   if (!accept) return true;
   return accept.split(',').some((part) => {
     const [type, ...params] = part.trim().split(';');
     if (params.some((p) => /^\s*q=0(\.0*)?\s*$/.test(p))) return false;
-    return ['*/*', 'application/*', 'application/json', 'application/problem+json'].includes(type.trim().toLowerCase());
+    return types.includes(type.trim().toLowerCase());
   });
 }
+const JSON_TYPES = ['*/*', 'application/*', 'application/json', 'application/problem+json'];
+const acceptsJson = (accept) => accepts(accept, JSON_TYPES);
 
 export function createApp({ db, config, scheduler = null, publicDir = null, clock = () => Date.now() }) {
   const router = new Router();
@@ -256,7 +259,10 @@ export function createApp({ db, config, scheduler = null, publicDir = null, cloc
         if (!extra.allowed) throw httpError('rate-limited', 'This operation costs more quota than remains.', { headers: { 'Retry-After': String(extra.retryAfterS) } });
       }
 
-      if (match.meta.stream) {
+      if (match.meta.produces) {
+        // Non-JSON resources (the Atom feed) declare what they produce.
+        if (!accepts(req.headers.accept, ['*/*', ...match.meta.produces])) throw httpError('not-acceptable', `This resource produces ${match.meta.produces[match.meta.produces.length - 1]}.`);
+      } else if (match.meta.stream) {
         if (!(req.headers.accept || '').includes('text/event-stream') && !acceptsJson(req.headers.accept)) throw httpError('not-acceptable');
       } else if (!acceptsJson(req.headers.accept)) {
         throw httpError('not-acceptable', 'This API produces application/json.');
@@ -284,7 +290,9 @@ export function createApp({ db, config, scheduler = null, publicDir = null, cloc
       const status = result.status ?? 200;
       const headers = { 'Cache-Control': 'no-cache', ...result.headers };
       if (result.body !== undefined && status === 200 && ['GET', 'HEAD'].includes(req.method)) {
-        const text = JSON.stringify(result.body);
+        // String bodies are pre-rendered representations (Content-Type set
+        // by the handler); everything else is JSON.
+        const text = typeof result.body === 'string' ? result.body : JSON.stringify(result.body);
         headers.ETag ??= etagOf(text);
         if (noneMatch(req.headers['if-none-match'], headers.ETag)) return send(req, res, 304, undefined, headers);
         return send(req, res, status, text, headers);

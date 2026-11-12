@@ -22,6 +22,8 @@ export function loadConfig(env = process.env, overrides = {}) {
     maxConcurrency: int(env.AHM_MAX_CONCURRENCY, 8),
     retentionDays: int(env.AHM_RETENTION_DAYS, 30),
     probe: env.AHM_PROBE || 'local',
+    // Absolute dashboard URL for links in the Atom feed and webhooks.
+    publicUrl: env.AHM_PUBLIC_URL || '',
     intervalOverrideS: int(env.AHM_INTERVAL_OVERRIDE_S, 0),
     rateLimit: { capacity: int(env.AHM_RATE_LIMIT, 300), windowS: 60 },
     scheduler: true,

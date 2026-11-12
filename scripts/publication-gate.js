@@ -3,8 +3,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
 import { SAFE_HEADERS } from '../src/api/validate.js';
+import { xml } from '../src/api/feed.js';
 
-const SERVABLE = new Set(['.html', '.css', '.js', '.json', '.svg', '.png', '.ico']);
+const SERVABLE = new Set(['.html', '.css', '.js', '.json', '.xml', '.svg', '.png', '.ico']);
 
 const files = (dir) =>
   readdirSync(dir, { recursive: true, withFileTypes: true })
@@ -50,12 +51,12 @@ export function secretValues(env, monitors) {
 }
 
 // 2. Secret scan: the raw value, its JSON-escaped form and its URL-encoded
-// form, in every generated JSON file (the only files built from data; HTML,
+// form, in every generated JSON and XML file (the only files built from data; HTML,
 // CSS and JS are copied from the repository). Returns labels, never values.
 export function secretHits(dir, secrets) {
   const hits = [];
-  const forms = secrets.map((s) => ({ ...s, needles: [...new Set([s.value, JSON.stringify(s.value).slice(1, -1), encodeURIComponent(s.value)])] }));
-  for (const file of files(dir).filter((f) => extname(f).toLowerCase() === '.json')) {
+  const forms = secrets.map((s) => ({ ...s, needles: [...new Set([s.value, JSON.stringify(s.value).slice(1, -1), encodeURIComponent(s.value), xml(s.value)])] }));
+  for (const file of files(dir).filter((f) => ['.json', '.xml'].includes(extname(f).toLowerCase()))) {
     const text = readFileSync(file, 'utf8');
     for (const s of forms) if (s.needles.some((n) => text.includes(n))) hits.push(`${s.label} in ${relative(dir, file)}`);
   }

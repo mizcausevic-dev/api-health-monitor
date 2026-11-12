@@ -40,6 +40,7 @@ jobs:
           --probe gh-actions
           --previous "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/data/export.json"
           --alerts-out "${RUNNER_TEMP}/alerts.json"
+          --public-url "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}"
       # Incident transitions from this run, kept outside the published site.
       - name: Hand alerts to the notify job
         id: alerts

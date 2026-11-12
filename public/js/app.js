@@ -390,7 +390,7 @@ async function renderIncidents(token) {
   const { data } = await get('/v1/incidents?limit=100');
   if (stale(token)) return;
   const open = data.data.filter((i) => i.state === 'open');
-  view.innerHTML = `<div class="page-head"><div><h1>Incidents</h1><p>An incident opens after a monitor fails its threshold of consecutive checks and resolves on the next passing check.</p></div></div>
+  view.innerHTML = `<div class="page-head"><div><h1>Incidents</h1><p>An incident opens after a monitor fails its threshold of consecutive checks and resolves on the next passing check.</p></div><a class="btn" href="${STATIC ? 'incidents.xml' : '/v1/feeds/incidents'}" type="application/atom+xml">Atom feed</a></div>
   <section class="grid">
     <div class="card kpi span-3"><span class="label">Open now</span><span class="value ${open.length ? 'tone-err' : 'tone-ok'}">${open.length}</span></div>
     <div class="card kpi span-3"><span class="label">Recorded</span><span class="value">${data.data.length}</span></div>
