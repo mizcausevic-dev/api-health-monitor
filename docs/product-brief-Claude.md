@@ -29,9 +29,9 @@ No GA4 events: the site intentionally sets no cookies and loads no third-party s
 | --- | --- |
 | Product intent, ICP, UX flow | Met for v1; error paths shown in forms (field-level 422 mapping) and toasts (412, 429) |
 | Frontend / backend architecture, data model | Met; see README Architecture |
-| Security | SSRF guard, auth model, CSP, redaction; independent review run before publish |
+| Security | SSRF guard, auth model, CSP, redaction. AppSec review (9 findings) and release/supply-chain review (4 findings) run before publish; all addressed. preflight-security gates 1-7 run. |
 | Privacy | No personal data collected; no cookies; demo stores status and timing only |
-| QA | 27 automated tests; manual browser pass of each view |
+| QA | 32 automated tests (green on Node 22 and 24 in CI); mutation-checked redirect test; manual browser pass of each view and all 14 theme modes |
 | Deployment | CI on Node 22 and 24; Pages workflow with pinned actions |
 | Observability | Structured JSON request logs with request IDs; `/v1/health` |
 | Analytics | Not instrumented by design (see above) |
