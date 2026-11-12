@@ -156,7 +156,7 @@ async function renderOverview(token) {
       <span class="delta"><a href="#/incidents">Incident history</a></span></div>
 
     <div class="card span-8">
-      <div class="card-head"><h2>Latency across all monitors</h2>${legend([{ label: 'p50', color: 'var(--c2)' }, { label: 'p95', color: 'var(--c3)', line: true }, { label: 'failed checks', color: 'color-mix(in srgb, var(--err) 35%, transparent)' }])}</div>
+      <div class="card-head"><h2>Latency across all monitors</h2>${legend([{ label: 'p50', color: 'var(--c2)' }, { label: 'p95', color: 'var(--c3)', line: true }, { label: 'degraded', color: 'color-mix(in srgb, var(--warn) 35%, transparent)' }, { label: 'failed', color: 'color-mix(in srgb, var(--err) 35%, transparent)' }])}</div>
       <div class="chart" id="ov-latency" data-label="Median and 95th percentile latency over time across all monitors"></div>
     </div>
     <div class="card span-4">
@@ -178,6 +178,7 @@ async function renderOverview(token) {
     location.hash = tr.dataset.href;
   }));
   lineChart($('#ov-latency'), {
+    height: window.innerWidth > 1100 ? 400 : 240,
     points: o.trend,
     series: [
       { key: 'p50_ms', label: 'p50', color: 'var(--c2)', area: true },
@@ -267,7 +268,7 @@ async function renderMonitor(id, token) {
   </div>
   <section class="grid">
     <div class="card span-8">
-      <div class="card-head"><h2>Latency · ${esc(win)}</h2>${legend([{ label: 'p50', color: 'var(--c2)' }, { label: 'p95', color: 'var(--c3)', line: true }, { label: 'max', color: 'var(--c5)', line: true }])}</div>
+      <div class="card-head"><h2>Latency · ${esc(win)}</h2>${legend([{ label: 'p50', color: 'var(--c2)' }, { label: 'p95', color: 'var(--c3)', line: true }, { label: 'max', color: 'var(--c5)', line: true }, { label: 'degraded', color: 'color-mix(in srgb, var(--warn) 35%, transparent)' }, { label: 'failed', color: 'color-mix(in srgb, var(--err) 35%, transparent)' }])}</div>
       <div class="stat-row" style="margin-bottom:12px">
         <div><span>p50</span><b>${ms(sum.latency_ms.p50)}</b></div><div><span>p90</span><b>${ms(sum.latency_ms.p90)}</b></div>
         <div><span>p95</span><b>${ms(sum.latency_ms.p95)}</b></div><div><span>p99</span><b>${ms(sum.latency_ms.p99)}</b></div>

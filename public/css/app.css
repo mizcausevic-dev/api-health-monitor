@@ -156,8 +156,8 @@ h1 { font-size: 22px; } h2 { font-size: 15px; } h3 { font-size: 13px; }
 }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-family: var(--font-display); font-weight: 700; letter-spacing: var(--heading-spacing); text-transform: var(--heading-transform); white-space: nowrap; }
 .brand-tile { fill: var(--surface-2); stroke: var(--accent); stroke-width: 2; }
-.brand-pulse { fill: none; stroke: var(--accent-text); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 60; animation: pulse-draw 3.2s ease-in-out infinite; }
-@keyframes pulse-draw { 0% { stroke-dashoffset: 60; } 45%, 100% { stroke-dashoffset: 0; } }
+.brand-pulse { fill: none; stroke: var(--accent-text); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; animation: pulse-glow 2.4s ease-in-out infinite; }
+@keyframes pulse-glow { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
 .tabs { display: flex; gap: 4px; }
 .tabs a { color: var(--muted); text-decoration: none; padding: 6px 10px; border-radius: var(--radius-sm); font-weight: 500; }
 .tabs a:hover { color: var(--text); background: var(--accent-soft); }
@@ -290,11 +290,12 @@ td.num, th.num { text-align: right; }
 /* logs */
 .log { display: grid; gap: 8px; }
 .log details { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
-.log summary { display: grid; grid-template-columns: 130px auto 1fr auto; gap: 12px; align-items: center; padding: 9px 12px; cursor: pointer; list-style: none; }
+.log summary { display: grid; grid-template-columns: auto auto 1fr; grid-template-areas: "when badge who" "msg msg msg"; gap: 4px 10px; align-items: center; padding: 9px 12px; cursor: pointer; list-style: none; }
+.log summary .status { grid-area: badge; justify-self: start; }
 .log summary::-webkit-details-marker { display: none; }
-.log summary .when { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
-.log summary .msg { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.log summary .who { color: var(--muted); font-size: 12px; }
+.log summary .when { grid-area: when; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.log summary .msg { grid-area: msg; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log summary .who { grid-area: who; justify-self: end; color: var(--muted); font-size: 12px; text-align: right; }
 .log .body { padding: 0 12px 12px; display: grid; gap: 8px; }
 .log pre { margin: 0; padding: 10px; background: var(--bg-solid, var(--bg)); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: auto; max-height: 240px; font: 12px/1.45 var(--font-mono); white-space: pre-wrap; word-break: break-word; }
 .empty { color: var(--muted); padding: 18px; text-align: center; border: 1px dashed var(--border); border-radius: var(--radius-sm); }
@@ -303,7 +304,7 @@ td.num, th.num { text-align: right; }
 
 /* API reference */
 .endpoints { display: grid; gap: 4px; }
-.endpoint { display: grid; grid-template-columns: 64px 1fr; gap: 10px; padding: 7px 8px; border-radius: var(--radius-sm); align-items: baseline; }
+.endpoint { display: grid; grid-template-columns: 64px 1fr; gap: 1px 10px; padding: 6px 8px; border-radius: var(--radius-sm); align-items: baseline; }
 .endpoint:hover { background: var(--accent-soft); }
 .verb { font-family: var(--font-mono); font-weight: 700; font-size: 11px; }
 .verb.GET { color: var(--ok); } .verb.POST { color: var(--accent-text); } .verb.PATCH { color: var(--warn); } .verb.DELETE { color: var(--err); }
@@ -361,9 +362,9 @@ legend { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0 4px;
   .detail-head { grid-template-columns: 1fr; }
   .actions { justify-content: flex-start; }
   .hide-sm { display: none; }
-  .log summary { grid-template-columns: 1fr auto; }
-  .log summary .msg { grid-column: 1 / -1; white-space: normal; }
-  .log summary .who { display: none; }
+  .m-url { max-width: 46vw; }
+  td, th { padding-left: 6px; padding-right: 6px; }
+  .log summary .msg { white-space: normal; }
   .form-grid { grid-template-columns: 1fr; }
   .form-grid .span-2 { grid-column: span 1; }
   .assertion-row { grid-template-columns: 1fr 1fr; }

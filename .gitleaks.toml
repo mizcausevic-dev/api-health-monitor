@@ -1,0 +1,10 @@
+# Default gitleaks rules, plus one narrow allowlist: resource IDs are
+# prefixed ULIDs (mon_/chk_/inc_ + 26 Crockford base32 chars). They are
+# random identifiers, and an ID that happens to contain "key" otherwise trips
+# the generic-api-key rule (seen in demo/seed-export.json).
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Prefixed ULID resource identifiers"
+regexes = ['''^(mon|chk|inc)_[0-9a-hjkmnp-tv-z]{26}''']

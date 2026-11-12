@@ -8,8 +8,8 @@
 //
 // Every JSON file on the site is a byte-for-byte API response produced by the
 // same code that serves /v1 — nothing is hand-assembled.
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, extname, join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
 import { openDb } from '../src/db/index.js';
 import { allMonitors } from '../src/db/repo.js';
@@ -125,5 +125,13 @@ writeFileSync(join(OUT, 'errors.html'), `<!doctype html>
 <main><div class="page-head"><div><h1>Error catalogue</h1><p>Every error is <code>application/problem+json</code> (RFC 9457). The <code>type</code> member links to an entry below.</p></div></div>
 <div class="grid">${Object.entries(PROBLEM_TYPES).map(([slug, d]) => `<section class="card span-6" id="${slug}"><div class="card-head"><h2>${esc(d.title)}</h2><span class="status ${d.status >= 500 ? 'down' : 'degraded'}">${d.status}</span></div><p><code>${slug}</code></p><p>${md(d.help)}</p></section>`).join('')}</div></main></body></html>
 `);
-writeFileSync(join(OUT, '.nojekyll'), '');
-log('site built', { out: OUT });
+// Publication gate (allowlist, not denylist): anything that is not a
+// web-servable file type aborts the build before the artifact is uploaded.
+const SERVABLE = new Set(['.html', '.css', '.js', '.json', '.svg', '.png', '.ico']);
+const bad = readdirSync(OUT, { recursive: true, withFileTypes: true })
+  .filter((d) => d.isFile())
+  .map((d) => join(d.parentPath ?? d.path, d.name))
+  .map((f) => relative(OUT, f))
+  .filter((rel) => !SERVABLE.has(extname(rel).toLowerCase()) || rel.split(/[\\/]/).some((seg) => seg.startsWith('.')));
+if (bad.length) throw new Error(`publication gate: refusing to publish ${bad.join(', ')}`);
+log('site built', { out: OUT, publication_gate: 'pass' });

@@ -118,6 +118,10 @@ Seven themes, each with light and dark modes, chosen per browser and stored in `
 
 ![Seven themes in light and dark](docs/images/themes.png)
 
+The layout collapses to one column on phones, and the monitor table scrolls inside its own card rather than the page.
+
+<img src="docs/images/mobile.png" width="300" alt="Overview on a 390 px phone viewport">
+
 ## Limits and trade-offs
 
 - **Single node.** The scheduler and rate limiter are in-process. Running two replicas against one database would double the checks. Horizontal scale needs a lease per monitor (for example a `locked_until` column) and a shared limiter.
