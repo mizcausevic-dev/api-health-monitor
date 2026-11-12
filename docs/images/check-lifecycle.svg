@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 444" width="1200" height="444" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif">
+  <title>Check lifecycle and incident state machine</title>
+  <desc>Each check resolves DNS through the SSRF guard, connects, negotiates TLS, waits for the first byte and reads the body. Assertions classify the result as up, degraded (only latency budgets failed) or down. Down results increment a failure streak; when the streak reaches the monitor's threshold an incident opens. The next up or degraded result resolves it.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8fb0ff"/></marker>
+    <style>
+      .panel { fill: #15181d; stroke: #272c35; stroke-width: 1.5; }
+      .h { fill: #e7e9ec; font-size: 15px; font-weight: 700; }
+      .t { fill: #c9ced6; font-size: 12.5px; }
+      .m { fill: #8e96a3; font-size: 11.5px; }
+      .f { stroke: #8fb0ff; stroke-width: 1.8; fill: none; marker-end: url(#a); }
+    </style>
+  </defs>
+  <rect width="1200" height="444" fill="#0d0f12"/>
+  <text x="30" y="32" class="h" font-size="17">One check, phase by phase</text>
+  <g>
+    <rect x="30" y="52" width="150" height="62" rx="10" fill="#8fb0ff" fill-opacity=".16" stroke="#8fb0ff"/><text x="44" y="78" class="h">DNS</text><text x="44" y="98" class="m">guarded lookup</text>
+    <rect x="200" y="52" width="150" height="62" rx="10" fill="#3d7bff" fill-opacity=".18" stroke="#3d7bff"/><text x="214" y="78" class="h">TCP connect</text><text x="214" y="98" class="m">fresh socket</text>
+    <rect x="370" y="52" width="150" height="62" rx="10" fill="#f2a93b" fill-opacity=".16" stroke="#f2a93b"/><text x="384" y="78" class="h">TLS</text><text x="384" y="98" class="m">no session reuse</text>
+    <rect x="540" y="52" width="150" height="62" rx="10" fill="#f0709a" fill-opacity=".16" stroke="#f0709a"/><text x="554" y="78" class="h">TTFB</text><text x="554" y="98" class="m">server time</text>
+    <rect x="710" y="52" width="150" height="62" rx="10" fill="#8e96a3" fill-opacity=".16" stroke="#8e96a3"/><text x="724" y="78" class="h">Transfer</text><text x="724" y="98" class="m">≤ 256 KiB captured</text>
+    <rect x="880" y="52" width="290" height="62" rx="10" class="panel"/><text x="894" y="78" class="h">Assertions</text><text x="894" y="98" class="m">status · latency · header · body · json path</text>
+  </g>
+  <path class="f" d="M180 83 H196"/><path class="f" d="M350 83 H366"/><path class="f" d="M520 83 H536"/><path class="f" d="M690 83 H706"/><path class="f" d="M860 83 H876"/>
+
+  <text x="30" y="166" class="h" font-size="17">Outcome and incident state machine</text>
+  <rect x="30" y="190" width="240" height="96" rx="12" class="panel" style="stroke:#2fbf71"/><text x="48" y="218" class="h" fill="#2fbf71" style="fill:#2fbf71">up</text><text x="48" y="242" class="t">every assertion passed</text><text x="48" y="264" class="m">resets the failure streak</text>
+  <rect x="30" y="306" width="240" height="96" rx="12" class="panel" style="stroke:#f2a93b"/><text x="48" y="334" class="h" style="fill:#f2a93b">degraded</text><text x="48" y="358" class="t">only latency budgets failed</text><text x="48" y="380" class="m">available, but spends Apdex</text>
+  <rect x="340" y="248" width="260" height="96" rx="12" class="panel" style="stroke:#f0506e"/><text x="358" y="276" class="h" style="fill:#f0506e">down</text><text x="358" y="300" class="t">transport error or a non-latency</text><text x="358" y="318" class="t">assertion failed · streak += 1</text><text x="358" y="336" class="m">2 KiB response sample stored</text>
+  <rect x="680" y="190" width="230" height="96" rx="12" class="panel" style="stroke:#f0506e;stroke-dasharray:6 4"/><text x="698" y="218" class="h">incident open</text><text x="698" y="242" class="t">streak ≥ failure_threshold</text><text x="698" y="264" class="m">unique index: one open per monitor</text>
+  <rect x="680" y="306" width="230" height="96" rx="12" class="panel"/><text x="698" y="334" class="h">incident resolved</text><text x="698" y="358" class="t">next up or degraded check</text><text x="698" y="380" class="m">duration = resolved − opened</text>
+  <rect x="960" y="190" width="210" height="212" rx="12" class="panel"/><text x="978" y="218" class="h">Events (SSE)</text>
+  <text x="978" y="246" class="t">check.completed</text><text x="978" y="270" class="t">incident.opened</text><text x="978" y="294" class="t">incident.resolved</text><text x="978" y="318" class="t">monitor.created</text><text x="978" y="342" class="t">monitor.updated</text><text x="978" y="366" class="t">monitor.deleted</text>
+  <path class="f" d="M270 238 Q310 238 336 270"/><text x="276" y="230" class="m">check fails</text>
+  <path class="f" d="M270 354 Q310 354 336 322"/>
+  <path class="f" d="M600 280 Q640 238 676 238"/><text x="612" y="236" class="m">threshold</text>
+  <path class="f" d="M795 286 V302"/>
+  <path class="f" d="M910 238 H956"/><path class="f" d="M910 354 H956"/>
+  <text x="30" y="432" class="m">All three writes (check row, monitor state, incident) happen in one SQLite transaction: src/db/repo.js recordCheck().</text>
+</svg>

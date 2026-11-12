@@ -1,0 +1,263 @@
+[
+  {
+    "id": "mon_01m77t22g0tpxfvf3bvkqaj4sb",
+    "name": "GitHub status page API",
+    "url": "https://www.githubstatus.com/api/v2/status.json",
+    "tags": [
+      "status-page",
+      "vendor"
+    ],
+    "assertions": [
+      {
+        "source": "status",
+        "op": "eq",
+        "target": 200
+      },
+      {
+        "source": "json",
+        "property": "status.indicator",
+        "op": "eq",
+        "target": "none"
+      },
+      {
+        "source": "latency_ms",
+        "op": "lt",
+        "target": 1500
+      }
+    ],
+    "interval_s": 900,
+    "timeout_ms": 10000,
+    "failure_threshold": 2,
+    "slo_target": 0.995
+  },
+  {
+    "id": "mon_01m77t23f8nycp8mxfp3xvc56b",
+    "name": "npm registry ping",
+    "url": "https://registry.npmjs.org/-/ping",
+    "tags": [
+      "registry",
+      "latency-budget"
+    ],
+    "assertions": [
+      {
+        "source": "status",
+        "op": "eq",
+        "target": 200
+      },
+      {
+        "source": "latency_ms",
+        "op": "lt",
+        "target": 150
+      }
+    ],
+    "interval_s": 900,
+    "timeout_ms": 10000,
+    "failure_threshold": 2,
+    "slo_target": 0.995
+  },
+  {
+    "id": "mon_01m77t24egv6aeaw4z79jvnp2z",
+    "name": "PyPI package metadata",
+    "url": "https://pypi.org/pypi/requests/2.32.3/json",
+    "tags": [
+      "registry",
+      "contract"
+    ],
+    "assertions": [
+      {
+        "source": "status",
+        "op": "eq",
+        "target": 200
+      },
+      {
+        "source": "header",
+        "property": "content-type",
+        "op": "contains",
+        "target": "application/json"
+      },
+      {
+        "source": "json",
+        "property": "info.name",
+        "op": "eq",
+        "target": "requests"
+      },
+      {
+        "source": "latency_ms",
+        "op": "lt",
+        "target": 1000
+      }
+    ],
+    "interval_s": 900,
+    "timeout_ms": 10000,
+    "failure_threshold": 2,
+    "slo_target": 0.995
+  },
+  {
+    "id": "mon_01m77t25dr2pcet5216wx2t8b6",
+    "name": "Cloudflare IP ranges API",
+    "url": "https://api.cloudflare.com/client/v4/ips",
+    "tags": [
+      "public-api",
+      "contract"
+    ],
+    "assertions": [
+      {
+        "source": "status",
+        "op": "eq",
+        "target": 200
+      },
+      {
+        "source": "json",
+        "property": "success",
+        "op": "eq",
+        "target": true
+      },
+      {
+        "source": "json",
+        "property": "result.ipv4_cidrs",
+        "op": "exists"
+      }
+    ],
+    "interval_s": 900,
+    "timeout_ms": 10000,
+    "failure_threshold": 2,
+    "slo_target": 0.995
+  },
+  {
+    "id": "mon_01m77t26d0aw4vrj73xdse8ne4",
+    "name": "Open-Meteo forecast",
+    "url": "https://api.open-meteo.com/v1/forecast?latitude=51.51&longitude=-0.13&current=temperature_2m",
+    "tags": [
+      "public-api"
+    ],
+    "assertions": [
+      {
+        "source": "status",
+        "op": "eq",
+        "target": 200
+      },
+      {
+        "source": "json",
+        "property": "current.temperature_2m",
+        "op": "exists"
+      },
+      {
+        "source": "latency_ms",
+        "op": "lt",
+        "target": 1000
+      }
+    ],
+    "interval_s": 900,
+    "timeout_ms": 10000,
+    "failure_threshold": 2,
+    "slo_target": 0.995
+  },
+  {
+    "id": "mon_01m77t27c8ddys2g6rgfwdddn7",
+    "name": "JSONPlaceholder resource",
+    "url": "https://jsonplaceholder.typicode.com/todos/1",
+    "tags": [
+      "public-api",
+      "contract"
+    ],
+    "assertions": [
+      {
+        "source": "status",
+        "op": "eq",
+        "target": 200
+      },
+      {
+        "source": "json",
+        "property": "id",
+        "op": "eq",
+        "target": 1
+      },
+      {
+        "source": "header",
+        "property": "content-type",
+        "op": "contains",
+        "target": "application/json"
+      }
+    ],
+    "interval_s": 900,
+    "timeout_ms": 10000,
+    "failure_threshold": 2,
+    "slo_target": 0.995
+  },
+  {
+    "id": "mon_01m77t28bg1ev3e51t0tjtdhq0",
+    "name": "JSONPlaceholder missing resource returns 404",
+    "url": "https://jsonplaceholder.typicode.com/todos/0",
+    "tags": [
+      "contract"
+    ],
+    "assertions": [
+      {
+        "source": "status",
+        "op": "eq",
+        "target": 404
+      }
+    ],
+    "interval_s": 900,
+    "timeout_ms": 10000,
+    "failure_threshold": 2,
+    "slo_target": 0.995
+  },
+  {
+    "id": "mon_01m77t29ardjhg93yd6hyahrh2",
+    "name": "GitHub HTTP to HTTPS redirect",
+    "url": "http://github.com/",
+    "tags": [
+      "redirect",
+      "security"
+    ],
+    "assertions": [
+      {
+        "source": "status",
+        "op": "eq",
+        "target": 301
+      },
+      {
+        "source": "header",
+        "property": "location",
+        "op": "contains",
+        "target": "https://"
+      }
+    ],
+    "interval_s": 900,
+    "timeout_ms": 10000,
+    "failure_threshold": 2,
+    "slo_target": 0.995
+  },
+  {
+    "id": "mon_01m77t2aa0zhsvemxh9c2r7w9q",
+    "name": "Wikipedia REST summary",
+    "url": "https://en.wikipedia.org/api/rest_v1/page/summary/HTTP",
+    "tags": [
+      "public-api",
+      "contract"
+    ],
+    "assertions": [
+      {
+        "source": "status",
+        "op": "eq",
+        "target": 200
+      },
+      {
+        "source": "json",
+        "property": "type",
+        "op": "eq",
+        "target": "standard"
+      },
+      {
+        "source": "latency_ms",
+        "op": "lt",
+        "target": 1200
+      }
+    ],
+    "interval_s": 900,
+    "timeout_ms": 10000,
+    "failure_threshold": 2,
+    "slo_target": 0.995
+  }
+]

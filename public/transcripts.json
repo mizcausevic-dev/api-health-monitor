@@ -1,0 +1,137 @@
+[
+  {
+    "title": "Create a monitor",
+    "note": "Returns 201 with Location and a version ETag. Credential-like header values are never echoed back.",
+    "request": "POST /v1/monitors HTTP/1.1\naccept: application/json\nidempotency-key: b7c1e9e2-create-payments\ncontent-type: application/json\nauthorization: Bearer <AHM_API_KEY>\n\n{\n  \"name\": \"Payments API health\",\n  \"url\": \"https://api.example.com/v2/health\",\n  \"interval_s\": 60,\n  \"timeout_ms\": 5000,\n  \"headers\": {\n    \"Authorization\": \"Bearer upstream-token\"\n  },\n  \"assertions\": [\n    {\n      \"source\": \"status\",\n      \"op\": \"eq\",\n      \"target\": 200\n    },\n    {\n      \"source\": \"json\",\n      \"property\": \"status\",\n      \"op\": \"eq\",\n      \"target\": \"ok\"\n    },\n    {\n      \"source\": \"latency_ms\",\n      \"op\": \"lt\",\n      \"target\": 800\n    }\n  ],\n  \"tags\": [\n    \"payments\"\n  ]\n}",
+    "response": {
+      "status": 201,
+      "text": "HTTP/1.1 201 Created\ncontent-type: application/json; charset=utf-8\nlocation: /v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881\netag: \"v1\"\nratelimit: \"default\";r=299;t=1\nratelimit-policy: \"default\";q=300;w=60\n\n{\n  \"id\": \"mon_01m78wpm00pzjqbbd8gg6j3881\",\n  \"name\": \"Payments API health\",\n  \"url\": \"https://api.example.com/v2/health\",\n  \"method\": \"GET\",\n  \"headers\": {\n    \"Authorization\": \"[redacted]\"\n  },\n  \"body\": null,\n  \"interval_s\": 60,\n  \"timeout_ms\": 5000,\n  \"follow_redirects\": false,\n  \"assertions\": [\n    {\n      \"source\": \"status\",\n      \"op\": \"eq\",\n      \"target\": 200\n    },\n    {\n      \"source\": \"json\",\n      \"property\": \"status\",\n      \"op\": \"eq\",\n      \"target\": \"ok\"\n    },\n    {\n      \"source\": \"latency_ms\",\n      \"op\": \"lt\",\n      \"target\": 800\n    }\n  ],\n  \"failure_threshold\": 2,\n  \"slo_target\": 0.999,\n  \"tags\": [\n    \"payments\"\n  ],\n  \"paused\": false,\n  \"version\": 1,\n  \"created_at\": \"2026-11-12T22:05:24.864Z\",\n  \"updated_at\": \"2026-11-12T22:05:24.864Z\",\n  \"links\": {\n    \"self\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881\",\n    \"state\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/state\",\n    \"checks\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/checks\",\n    \"stats\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/stats\",\n    \"incidents\": \"/v1/incidents?monitor_id=mon_01m78wpm00pzjqbbd8gg6j3881\"\n  }\n}"
+    }
+  },
+  {
+    "title": "Retry with the same Idempotency-Key",
+    "note": "A network retry replays the original response instead of creating a duplicate monitor.",
+    "request": "POST /v1/monitors HTTP/1.1\naccept: application/json\nidempotency-key: b7c1e9e2-create-payments\ncontent-type: application/json\nauthorization: Bearer <AHM_API_KEY>\n\n{\n  \"name\": \"Payments API health\",\n  \"url\": \"https://api.example.com/v2/health\",\n  \"interval_s\": 60,\n  \"timeout_ms\": 5000,\n  \"headers\": {\n    \"Authorization\": \"Bearer upstream-token\"\n  },\n  \"assertions\": [\n    {\n      \"source\": \"status\",\n      \"op\": \"eq\",\n      \"target\": 200\n    },\n    {\n      \"source\": \"json\",\n      \"property\": \"status\",\n      \"op\": \"eq\",\n      \"target\": \"ok\"\n    },\n    {\n      \"source\": \"latency_ms\",\n      \"op\": \"lt\",\n      \"target\": 800\n    }\n  ],\n  \"tags\": [\n    \"payments\"\n  ]\n}",
+    "response": {
+      "status": 201,
+      "text": "HTTP/1.1 201 Created\ncontent-type: application/json; charset=utf-8\nlocation: /v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881\netag: \"v1\"\nratelimit: \"default\";r=298;t=1\nratelimit-policy: \"default\";q=300;w=60\nidempotent-replayed: true\n\n{\n  \"id\": \"mon_01m78wpm00pzjqbbd8gg6j3881\",\n  \"name\": \"Payments API health\",\n  \"url\": \"https://api.example.com/v2/health\",\n  \"method\": \"GET\",\n  \"headers\": {\n    \"Authorization\": \"[redacted]\"\n  },\n  \"body\": null,\n  \"interval_s\": 60,\n  \"timeout_ms\": 5000,\n  \"follow_redirects\": false,\n  \"assertions\": [\n    {\n      \"source\": \"status\",\n      \"op\": \"eq\",\n      \"target\": 200\n    },\n    {\n      \"source\": \"json\",\n      \"property\": \"status\",\n      \"op\": \"eq\",\n      \"target\": \"ok\"\n    },\n    {\n      \"source\": \"latency_ms\",\n      \"op\": \"lt\",\n      \"target\": 800\n    }\n  ],\n  \"failure_threshold\": 2,\n  \"slo_target\": 0.999,\n  \"tags\": [\n    \"payments\"\n  ],\n  \"paused\": false,\n  \"version\": 1,\n  \"created_at\": \"2026-11-12T22:05:24.864Z\",\n  \"updated_at\": \"2026-11-12T22:05:24.864Z\",\n  \"links\": {\n    \"self\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881\",\n    \"state\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/state\",\n    \"checks\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/checks\",\n    \"stats\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/stats\",\n    \"incidents\": \"/v1/incidents?monitor_id=mon_01m78wpm00pzjqbbd8gg6j3881\"\n  }\n}"
+    }
+  },
+  {
+    "title": "Same key, different payload",
+    "note": "Reusing a key for a different request is a client bug, rejected with 422.",
+    "request": "POST /v1/monitors HTTP/1.1\naccept: application/json\nidempotency-key: b7c1e9e2-create-payments\ncontent-type: application/json\nauthorization: Bearer <AHM_API_KEY>\n\n{\n  \"name\": \"Something else\",\n  \"url\": \"https://api.example.com/v2/health\",\n  \"interval_s\": 60,\n  \"timeout_ms\": 5000,\n  \"headers\": {\n    \"Authorization\": \"Bearer upstream-token\"\n  },\n  \"assertions\": [\n    {\n      \"source\": \"status\",\n      \"op\": \"eq\",\n      \"target\": 200\n    },\n    {\n      \"source\": \"json\",\n      \"property\": \"status\",\n      \"op\": \"eq\",\n      \"target\": \"ok\"\n    },\n    {\n      \"source\": \"latency_ms\",\n      \"op\": \"lt\",\n      \"target\": 800\n    }\n  ],\n  \"tags\": [\n    \"payments\"\n  ]\n}",
+    "response": {
+      "status": 422,
+      "text": "HTTP/1.1 422 Unprocessable Content\ncontent-type: application/problem+json; charset=utf-8\nratelimit: \"default\";r=297;t=1\nratelimit-policy: \"default\";q=300;w=60\n\n{\n  \"type\": \"https://mizcausevic-dev.github.io/api-health-monitor/errors.html#idempotency-key-reused\",\n  \"title\": \"Idempotency-Key reused with a different payload\",\n  \"status\": 422,\n  \"detail\": \"This Idempotency-Key was used with a different request.\",\n  \"instance\": \"/v1/monitors\",\n  \"request_id\": \"5d5d476e-f612-4aa1-a27d-9aac1592ec0c\"\n}"
+    }
+  },
+  {
+    "title": "Validation errors point at the field",
+    "note": "RFC 9457 problem details with RFC 6901 JSON Pointers. Unknown fields are rejected, not ignored.",
+    "request": "POST /v1/monitors HTTP/1.1\naccept: application/json\ncontent-type: application/json\nauthorization: Bearer <AHM_API_KEY>\n\n{\n  \"name\": \"\",\n  \"url\": \"ftp://files.example.com\",\n  \"interval\": 5,\n  \"assertions\": [\n    {\n      \"source\": \"latency_ms\",\n      \"op\": \"contains\",\n      \"target\": \"fast\"\n    }\n  ]\n}",
+    "response": {
+      "status": 422,
+      "text": "HTTP/1.1 422 Unprocessable Content\ncontent-type: application/problem+json; charset=utf-8\nratelimit: \"default\";r=296;t=1\nratelimit-policy: \"default\";q=300;w=60\n\n{\n  \"type\": \"https://mizcausevic-dev.github.io/api-health-monitor/errors.html#validation-failed\",\n  \"title\": \"Validation failed\",\n  \"status\": 422,\n  \"detail\": \"4 fields failed validation.\",\n  \"instance\": \"/v1/monitors\",\n  \"request_id\": \"ca73e4d7-62dd-4f34-b52c-37ee5f78e6ed\",\n  \"errors\": [\n    {\n      \"pointer\": \"/interval\",\n      \"detail\": \"Unknown field.\"\n    },\n    {\n      \"pointer\": \"/name\",\n      \"detail\": \"Required string, 1-120 characters.\"\n    },\n    {\n      \"pointer\": \"/url\",\n      \"detail\": \"Only http and https URLs can be monitored.\"\n    },\n    {\n      \"pointer\": \"/assertions/0/op\",\n      \"detail\": \"For source \\\"latency_ms\\\", one of lt, lte.\"\n    }\n  ]\n}"
+    }
+  },
+  {
+    "title": "SSRF: cloud metadata address refused",
+    "note": "Private, loopback and link-local targets are refused at validation, and again at DNS resolution time for hostnames.",
+    "request": "POST /v1/monitors HTTP/1.1\naccept: application/json\ncontent-type: application/json\nauthorization: Bearer <AHM_API_KEY>\n\n{\n  \"name\": \"metadata\",\n  \"url\": \"http://169.254.169.254/latest/meta-data/\"\n}",
+    "response": {
+      "status": 422,
+      "text": "HTTP/1.1 422 Unprocessable Content\ncontent-type: application/problem+json; charset=utf-8\nratelimit: \"default\";r=295;t=1\nratelimit-policy: \"default\";q=300;w=60\n\n{\n  \"type\": \"https://mizcausevic-dev.github.io/api-health-monitor/errors.html#validation-failed\",\n  \"title\": \"Validation failed\",\n  \"status\": 422,\n  \"detail\": \"1 field failed validation.\",\n  \"instance\": \"/v1/monitors\",\n  \"request_id\": \"4d1dba5e-c1be-4411-afd5-b08c075f20aa\",\n  \"errors\": [\n    {\n      \"pointer\": \"/url\",\n      \"detail\": \"Target resolves to a private, loopback or reserved address.\"\n    }\n  ]\n}"
+    }
+  },
+  {
+    "title": "Read with an ETag",
+    "note": null,
+    "request": "GET /v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881 HTTP/1.1\naccept: application/json\nauthorization: Bearer <AHM_API_KEY>",
+    "response": {
+      "status": 200,
+      "text": "HTTP/1.1 200 OK\ncontent-type: application/json; charset=utf-8\netag: \"v1\"\nratelimit: \"default\";r=294;t=2\nratelimit-policy: \"default\";q=300;w=60\n\n{\n  \"id\": \"mon_01m78wpm00pzjqbbd8gg6j3881\",\n  \"name\": \"Payments API health\",\n  \"url\": \"https://api.example.com/v2/health\",\n  \"method\": \"GET\",\n  \"headers\": {\n    \"Authorization\": \"[redacted]\"\n  },\n  \"body\": null,\n  \"interval_s\": 60,\n  \"timeout_ms\": 5000,\n  \"follow_redirects\": false,\n  \"assertions\": [\n    {\n      \"source\": \"status\",\n      \"op\": \"eq\",\n      \"target\": 200\n    },\n    {\n      \"source\": \"json\",\n      \"property\": \"status\",\n      \"op\": \"eq\",\n      \"target\": \"ok\"\n    },\n    {\n      \"source\": \"latency_ms\",\n      \"op\": \"lt\",\n      \"target\": 800\n    }\n  ],\n  \"failure_threshold\": 2,\n  \"slo_target\": 0.999,\n  \"tags\": [\n    \"payments\"\n  ],\n  \"paused\": false,\n  \"version\": 1,\n  \"created_at\": \"2026-11-12T22:05:24.864Z\",\n  \"updated_at\": \"2026-11-12T22:05:24.864Z\",\n  \"links\": {\n    \"self\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881\",\n    \"state\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/state\",\n    \"checks\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/checks\",\n    \"stats\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/stats\",\n    \"incidents\": \"/v1/incidents?monitor_id=mon_01m78wpm00pzjqbbd8gg6j3881\"\n  }\n}"
+    }
+  },
+  {
+    "title": "Conditional GET",
+    "note": "Unchanged resources cost a 304 with no body.",
+    "request": "GET /v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881 HTTP/1.1\naccept: application/json\nif-none-match: \"v1\"\nauthorization: Bearer <AHM_API_KEY>",
+    "response": {
+      "status": 304,
+      "text": "HTTP/1.1 304 Not Modified\netag: \"v1\"\nratelimit: \"default\";r=293;t=2\nratelimit-policy: \"default\";q=300;w=60"
+    }
+  },
+  {
+    "title": "PATCH without If-Match",
+    "note": "Writes must prove they saw the current version (lost-update protection).",
+    "request": "PATCH /v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881 HTTP/1.1\naccept: application/json\ncontent-type: application/merge-patch+json\nauthorization: Bearer <AHM_API_KEY>\n\n{\n  \"interval_s\": 30\n}",
+    "response": {
+      "status": 428,
+      "text": "HTTP/1.1 428 Precondition Required\ncontent-type: application/problem+json; charset=utf-8\nratelimit: \"default\";r=292;t=2\nratelimit-policy: \"default\";q=300;w=60\n\n{\n  \"type\": \"https://mizcausevic-dev.github.io/api-health-monitor/errors.html#precondition-required\",\n  \"title\": \"Precondition required\",\n  \"status\": 428,\n  \"detail\": \"Send If-Match with the ETag from your last GET of this monitor.\",\n  \"instance\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881\",\n  \"request_id\": \"8d355535-5192-49d7-86a1-683e2c6be2f1\",\n  \"current_etag\": \"\\\"v1\\\"\"\n}"
+    }
+  },
+  {
+    "title": "JSON Merge Patch with If-Match",
+    "note": "Only the changed fields are sent. The ETag moves to the next version.",
+    "request": "PATCH /v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881 HTTP/1.1\naccept: application/json\ncontent-type: application/merge-patch+json\nif-match: \"v1\"\nauthorization: Bearer <AHM_API_KEY>\n\n{\n  \"interval_s\": 30,\n  \"tags\": [\n    \"payments\",\n    \"tier-1\"\n  ]\n}",
+    "response": {
+      "status": 200,
+      "text": "HTTP/1.1 200 OK\ncontent-type: application/json; charset=utf-8\netag: \"v2\"\nratelimit: \"default\";r=291;t=2\nratelimit-policy: \"default\";q=300;w=60\n\n{\n  \"id\": \"mon_01m78wpm00pzjqbbd8gg6j3881\",\n  \"name\": \"Payments API health\",\n  \"url\": \"https://api.example.com/v2/health\",\n  \"method\": \"GET\",\n  \"headers\": {\n    \"Authorization\": \"[redacted]\"\n  },\n  \"body\": null,\n  \"interval_s\": 30,\n  \"timeout_ms\": 5000,\n  \"follow_redirects\": false,\n  \"assertions\": [\n    {\n      \"source\": \"status\",\n      \"op\": \"eq\",\n      \"target\": 200\n    },\n    {\n      \"source\": \"json\",\n      \"property\": \"status\",\n      \"op\": \"eq\",\n      \"target\": \"ok\"\n    },\n    {\n      \"source\": \"latency_ms\",\n      \"op\": \"lt\",\n      \"target\": 800\n    }\n  ],\n  \"failure_threshold\": 2,\n  \"slo_target\": 0.999,\n  \"tags\": [\n    \"payments\",\n    \"tier-1\"\n  ],\n  \"paused\": false,\n  \"version\": 2,\n  \"created_at\": \"2026-11-12T22:05:24.864Z\",\n  \"updated_at\": \"2026-11-12T22:05:24.965Z\",\n  \"links\": {\n    \"self\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881\",\n    \"state\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/state\",\n    \"checks\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/checks\",\n    \"stats\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881/stats\",\n    \"incidents\": \"/v1/incidents?monitor_id=mon_01m78wpm00pzjqbbd8gg6j3881\"\n  }\n}"
+    }
+  },
+  {
+    "title": "Stale ETag",
+    "note": "A second writer holding the old ETag gets 412 instead of silently overwriting.",
+    "request": "PATCH /v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881 HTTP/1.1\naccept: application/json\ncontent-type: application/merge-patch+json\nif-match: \"v1\"\nauthorization: Bearer <AHM_API_KEY>\n\n{\n  \"paused\": true\n}",
+    "response": {
+      "status": 412,
+      "text": "HTTP/1.1 412 Precondition Failed\ncontent-type: application/problem+json; charset=utf-8\nratelimit: \"default\";r=290;t=2\nratelimit-policy: \"default\";q=300;w=60\n\n{\n  \"type\": \"https://mizcausevic-dev.github.io/api-health-monitor/errors.html#precondition-failed\",\n  \"title\": \"Precondition failed\",\n  \"status\": 412,\n  \"detail\": \"The monitor changed since you read it.\",\n  \"instance\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881\",\n  \"request_id\": \"3ce2c5b5-4288-4c9b-9f06-a36e9f56ca39\",\n  \"current_etag\": \"\\\"v2\\\"\"\n}"
+    }
+  },
+  {
+    "title": "Keyset pagination",
+    "note": "Opaque cursor, next link in both the body and an RFC 8288 Link header.",
+    "request": "GET /v1/monitors?sort=name&limit=1 HTTP/1.1\naccept: application/json\nauthorization: Bearer <AHM_API_KEY>",
+    "response": {
+      "status": 200,
+      "text": "HTTP/1.1 200 OK\ncontent-type: application/json; charset=utf-8\netag: \"yPf7wPdXrnMy_B6gj85NoJnL0my\"\nlink: </v1/monitors?sort=name&limit=1&cursor=eyJ2IjoiRWRnZSByZWdpb24gMSIsImlkIjoibW9uXzAxbTc4d3BtM3Q3OGI2ZXIzeXQzcHdqc2pxIiwic29ydCI6Im5hbWUifQ>; rel=\"next\"\nratelimit: \"default\";r=287;t=3\nratelimit-policy: \"default\";q=300;w=60\n\n{\n  \"data\": [\n    {\n      \"id\": \"mon_01m78wpm3t78b6er3yt3pwjsjq\",\n      \"name\": \"Edge region 1\",\n      \"url\": \"https://api.example.com/v2/health\",\n      \"method\": \"GET\",\n      \"headers\": {},\n      \"body\": null,\n      \"interval_s\": 60,\n      \"timeout_ms\": 5000,\n      \"follow_redirects\": false,\n      \"assertions\": [\n        {\n          \"source\": \"status\",\n          \"op\": \"eq\",\n          \"target\": 200\n        },\n        {\n          \"source\": \"json\",\n          \"property\": \"status\",\n          \"op\": \"eq\",\n          \"target\": \"ok\"\n        },\n        {\n          \"source\": \"latency_ms\",\n          \"op\": \"lt\",\n          \"target\": 800\n        }\n      ],\n      \"failure_threshold\": 2,\n      \"slo_target\": 0.999,\n      \"tags\": [\n        \"payments\"\n      ],\n      \"paused\": false,\n      \"version\": 1,\n      \"created_at\": \"2026-11-12T22:05:24.986Z\",\n      \"updated_at\": \"2026-11-12T22:05:24.986Z\",\n      \"links\": {\n        \"self\": \"/v1/monitors/mon_01m78wpm3t78b6er3yt3pwjsjq\",\n        \"state\": \"/v1/monitors/mon_01m78wpm3t78b6er3yt3pwjsjq/state\",\n        \"checks\": \"/v1/monitors/mon_01m78wpm3t78b6er3yt3pwjsjq/checks\",\n        \"stats\": \"/v1/monitors/mon_01m78wpm3t78b6er3yt3pwjsjq/stats\",\n        \"incidents\": \"/v1/incidents?monitor_id=mon_01m78wpm3t78b6er3yt3pwjsjq\"\n      }\n    }\n  ],\n  \"page\": {\n    \"next_cursor\": \"eyJ2IjoiRWRnZSByZWdpb24gMSIsImlkIjoibW9uXzAxbTc4d3BtM3Q3OGI2ZXIzeXQzcHdqc2pxIiwic29ydCI6Im5hbWUifQ\",\n    \"next\": \"/v1/monitors?sort=name&limit=1&cursor=eyJ2IjoiRWRnZSByZWdpb24gMSIsImlkIjoibW9uXzAxbTc4d3BtM3Q3OGI2ZXIzeXQzcHdqc2pxIiwic29ydCI6Im5hbWUifQ\"\n  }\n}"
+    }
+  },
+  {
+    "title": "Unknown query parameter",
+    "note": "A misspelled filter fails loudly instead of returning unfiltered data with a 200.",
+    "request": "GET /v1/monitors?stauts=down HTTP/1.1\naccept: application/json\nauthorization: Bearer <AHM_API_KEY>",
+    "response": {
+      "status": 400,
+      "text": "HTTP/1.1 400 Bad Request\ncontent-type: application/problem+json; charset=utf-8\nratelimit: \"default\";r=286;t=3\nratelimit-policy: \"default\";q=300;w=60\n\n{\n  \"type\": \"https://mizcausevic-dev.github.io/api-health-monitor/errors.html#bad-request\",\n  \"title\": \"Bad request\",\n  \"status\": 400,\n  \"detail\": \"Unknown query parameter \\\"stauts\\\". Allowed: status, tag, q, sort, limit, expand, cursor.\",\n  \"instance\": \"/v1/monitors\",\n  \"request_id\": \"ff5b78f9-13a8-40e6-9471-0de8856220ae\",\n  \"parameter\": \"stauts\"\n}"
+    }
+  },
+  {
+    "title": "Wrong method",
+    "note": "405 carries the Allow header, distinct from 404 for a missing resource.",
+    "request": "PUT /v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881 HTTP/1.1\naccept: application/json\ncontent-type: application/json\nauthorization: Bearer <AHM_API_KEY>\n\n{\n  \"name\": \"Payments API health\",\n  \"url\": \"https://api.example.com/v2/health\",\n  \"interval_s\": 60,\n  \"timeout_ms\": 5000,\n  \"headers\": {\n    \"Authorization\": \"Bearer upstream-token\"\n  },\n  \"assertions\": [\n    {\n      \"source\": \"status\",\n      \"op\": \"eq\",\n      \"target\": 200\n    },\n    {\n      \"source\": \"json\",\n      \"property\": \"status\",\n      \"op\": \"eq\",\n      \"target\": \"ok\"\n    },\n    {\n      \"source\": \"latency_ms\",\n      \"op\": \"lt\",\n      \"target\": 800\n    }\n  ],\n  \"tags\": [\n    \"payments\"\n  ]\n}",
+    "response": {
+      "status": 405,
+      "text": "HTTP/1.1 405 Method Not Allowed\ncontent-type: application/problem+json; charset=utf-8\nallow: GET, PATCH, DELETE, HEAD, OPTIONS\nratelimit: \"default\";r=285;t=3\nratelimit-policy: \"default\";q=300;w=60\n\n{\n  \"type\": \"https://mizcausevic-dev.github.io/api-health-monitor/errors.html#method-not-allowed\",\n  \"title\": \"Method not allowed\",\n  \"status\": 405,\n  \"detail\": \"PUT is not supported on /v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881.\",\n  \"instance\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881\",\n  \"request_id\": \"b8191d55-045c-44ee-8b80-ab2b696432d3\",\n  \"allowed_methods\": [\n    \"GET\",\n    \"PATCH\",\n    \"DELETE\",\n    \"HEAD\",\n    \"OPTIONS\"\n  ]\n}"
+    }
+  },
+  {
+    "title": "Missing credentials",
+    "note": null,
+    "request": "DELETE /v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881 HTTP/1.1\naccept: application/json",
+    "response": {
+      "status": 401,
+      "text": "HTTP/1.1 401 Unauthorized\ncontent-type: application/problem+json; charset=utf-8\nratelimit: \"default\";r=299;t=1\nratelimit-policy: \"default\";q=300;w=60\nwww-authenticate: Bearer realm=\"api-health-monitor\"\n\n{\n  \"type\": \"https://mizcausevic-dev.github.io/api-health-monitor/errors.html#unauthorized\",\n  \"title\": \"Authentication required\",\n  \"status\": 401,\n  \"detail\": \"A valid API key is required for this request.\",\n  \"instance\": \"/v1/monitors/mon_01m78wpm00pzjqbbd8gg6j3881\",\n  \"request_id\": \"2f4fa1a8-f8af-4da1-a2fe-e916a8635ad5\"\n}"
+    }
+  },
+  {
+    "title": "Rate limited",
+    "note": "Token bucket per client. Quota is reported on every response with the IETF RateLimit fields (draft).",
+    "request": "GET /v1/health HTTP/1.1\naccept: application/json",
+    "response": {
+      "status": 429,
+      "text": "HTTP/1.1 429 Too Many Requests\ncontent-type: application/problem+json; charset=utf-8\nretry-after: 30\nratelimit: \"default\";r=0;t=60\nratelimit-policy: \"default\";q=2;w=60\n\n{\n  \"type\": \"https://mizcausevic-dev.github.io/api-health-monitor/errors.html#rate-limited\",\n  \"title\": \"Too many requests\",\n  \"status\": 429,\n  \"detail\": \"Request quota exhausted.\",\n  \"instance\": \"/v1/health\",\n  \"request_id\": \"593385a5-85f6-4e75-8300-cdbc29dc9837\"\n}"
+    }
+  }
+]

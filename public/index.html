@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" data-theme="bento" data-scheme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API Health Monitor</title>
+  <meta name="description" content="Control panel for testing APIs and watching for failures: saved endpoint monitors, scheduled checks with assertions, latency percentiles and a log of unexpected responses.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'">
+  <meta name="ahm-mode" content="live">
+  <meta name="color-scheme" content="dark light">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="js/theme-boot.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#view">Skip to content</a>
+  <header class="topbar">
+    <a class="brand" href="#/" aria-label="API Health Monitor, overview">
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="8" class="brand-tile"/><path d="M5 17h5l3-7 4 13 3-9 2 3h5" class="brand-pulse"/></svg>
+      <span>API Health Monitor</span>
+    </a>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#/" data-nav="overview">Overview</a>
+      <a href="#/incidents" data-nav="incidents">Incidents</a>
+      <a href="#/api" data-nav="api">API</a>
+    </nav>
+    <div class="tools">
+      <span id="mode-pill" class="pill" hidden></span>
+      <label class="sr-only" for="theme-select">Theme</label>
+      <select id="theme-select" class="select"></select>
+      <button id="scheme-toggle" class="icon-btn" type="button" aria-label="Switch to light mode">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>
+      </button>
+      <button id="new-monitor" class="btn primary" type="button" hidden>New monitor</button>
+    </div>
+  </header>
+  <div id="banner" class="banner" hidden></div>
+  <main id="view" tabindex="-1" aria-live="polite" aria-busy="true"></main>
+  <footer class="footer">
+    <span>REST API: <a href="#/api">reference and live transcripts</a></span>
+    <span><a href="https://github.com/mizcausevic-dev/api-health-monitor">Source on GitHub</a> · MIT</span>
+    <span>No cookies, no analytics. Theme choice is stored in this browser only.</span>
+  </footer>
+
+  <dialog id="monitor-dialog" aria-labelledby="dialog-title">
+    <form id="monitor-form" method="dialog" novalidate>
+      <header class="dialog-head">
+        <h2 id="dialog-title">New monitor</h2>
+        <button class="icon-btn" value="cancel" formnovalidate aria-label="Close">✕</button>
+      </header>
+      <div class="form-grid">
+        <label class="span-2">Name<input name="name" required maxlength="120" autocomplete="off"></label>
+        <label class="span-2">URL<input name="url" type="url" required placeholder="https://api.example.com/health" autocomplete="off"></label>
+        <label>Method<select name="method"><option>GET</option><option>HEAD</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option>OPTIONS</option></select></label>
+        <label>Interval (s)<input name="interval_s" type="number" min="30" max="86400" value="60"></label>
+        <label>Timeout (ms)<input name="timeout_ms" type="number" min="100" max="30000" value="10000"></label>
+        <label>Failures before incident<input name="failure_threshold" type="number" min="1" max="10" value="2"></label>
+        <label>SLO target<input name="slo_target" type="number" min="0.5" max="0.99999" step="0.0001" value="0.999"></label>
+        <label>Tags<input name="tags" placeholder="payments, edge" autocomplete="off"></label>
+        <label class="check"><input name="follow_redirects" type="checkbox"> Follow redirects</label>
+        <label class="check"><input name="paused" type="checkbox"> Paused</label>
+        <label class="span-2">Request headers <small>one per line, <code>Name: value</code></small><textarea name="headers" rows="2" spellcheck="false"></textarea></label>
+        <label class="span-2" data-body>Request body<textarea name="body" rows="2" spellcheck="false"></textarea></label>
+        <fieldset class="span-2">
+          <legend>Assertions <small>empty means status &lt; 400</small></legend>
+          <div id="assertion-rows"></div>
+          <button type="button" class="btn ghost" id="add-assertion">Add assertion</button>
+        </fieldset>
+      </div>
+      <p id="form-errors" class="form-errors" role="alert" hidden></p>
+      <footer class="dialog-foot">
+        <button class="btn ghost" value="cancel" formnovalidate>Cancel</button>
+        <button class="btn primary" id="save-monitor" value="default">Save monitor</button>
+      </footer>
+    </form>
+  </dialog>
+  <div id="tooltip" class="tooltip" role="status" hidden></div>
+  <div id="toasts" class="toasts" aria-live="assertive"></div>
+</body>
+</html>

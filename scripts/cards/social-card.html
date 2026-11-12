@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- Source for .github/social-preview.png (1280x640). Render with headless Chrome:
+     chrome --headless=new --window-size=1280,640 --screenshot=.github/social-preview.png scripts/cards/social-card.html -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>API Health Monitor social card</title>
+<style>
+  html, body { margin: 0; width: 1280px; height: 640px; overflow: hidden; background: #0d0f12; color: #e7e9ec; font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif; }
+  .wrap { position: absolute; inset: 40px; display: grid; grid-template-columns: 470px 1fr; gap: 36px; align-items: center; }
+  .kicker { font: 600 15px/1 "Cascadia Mono", Consolas, monospace; color: #8fb0ff; letter-spacing: .08em; text-transform: uppercase; }
+  h1 { font-size: 58px; line-height: 1.02; margin: 18px 0 18px; letter-spacing: -0.03em; }
+  p { font-size: 21px; line-height: 1.45; color: #aeb5c1; margin: 0 0 26px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font: 14px/1 "Cascadia Mono", Consolas, monospace; padding: 8px 11px; border-radius: 8px; background: #15181d; border: 1px solid #272c35; color: #c9ced6; }
+  .chip b { color: #8fb0ff; font-weight: 600; }
+  .shot { position: relative; height: 560px; border-radius: 14px; overflow: hidden; border: 1px solid #2e3440; box-shadow: 0 30px 80px rgb(0 0 0 / .6), 0 0 0 1px rgb(61 123 255 / .15); }
+  .shot img { width: 100%; display: block; }
+  .shot::after { content: ""; position: absolute; inset: auto 0 0 0; height: 120px; background: linear-gradient(transparent, #0d0f12); }
+  .brand { position: absolute; left: 40px; bottom: 34px; display: flex; gap: 10px; align-items: center; font: 600 15px/1 system-ui; color: #8e96a3; }
+  .pulse { width: 30px; height: 30px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div>
+      <div class="kicker">REST API · open source</div>
+      <h1>API Health Monitor</h1>
+      <p>Saved endpoints, scheduled checks with assertions, latency by connection phase, and a log of every unexpected response.</p>
+      <div class="chips">
+        <span class="chip"><b>RFC 9457</b> errors</span>
+        <span class="chip"><b>If-Match</b> / ETag</span>
+        <span class="chip"><b>Idempotency-Key</b></span>
+        <span class="chip"><b>Merge Patch</b></span>
+        <span class="chip"><b>SSE</b> events</span>
+        <span class="chip"><b>SSRF</b>-guarded</span>
+        <span class="chip"><b>0</b> dependencies</span>
+      </div>
+    </div>
+    <div class="shot"><img src="../../docs/images/overview.png" alt=""></div>
+  </div>
+  <div class="brand"><svg class="pulse" viewBox="0 0 32 32"><rect x="1" y="1" width="30" height="30" rx="8" fill="#15181d" stroke="#3d7bff" stroke-width="2"/><path d="M5 17h5l3-7 4 13 3-9 2 3h5" fill="none" stroke="#8fb0ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>github.com/mizcausevic-dev/api-health-monitor</div>
+</body>
+</html>

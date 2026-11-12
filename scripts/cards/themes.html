@@ -1,0 +1,29 @@
+<!doctype html>
+<!-- Source for docs/images/themes.png. Needs the app running on 127.0.0.1:8090.
+     Each tile is the real dashboard in an iframe with ?theme=&scheme= (not saved). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Theme gallery</title>
+<style>
+  html, body { margin: 0; background: #0d0f12; color: #c9ced6; font: 14px/1.4 "Segoe UI", system-ui, sans-serif; }
+  .grid { display: grid; grid-template-columns: repeat(4, 340px); gap: 20px 18px; padding: 24px; }
+  figure { margin: 0; }
+  .frame { width: 340px; height: 212px; overflow: hidden; border-radius: 10px; border: 1px solid #272c35; }
+  iframe { width: 1440px; height: 900px; border: 0; transform: scale(.2361); transform-origin: 0 0; }
+  figcaption { margin-top: 7px; font-size: 13px; }
+  figcaption span { color: #8e96a3; }
+</style>
+</head>
+<body>
+  <div class="grid" id="grid"></div>
+  <script>
+    const themes = [['bento', 'Bento Grid'], ['cosmic', 'Cosmic Cyber'], ['swiss', 'Swiss Architect'], ['aqua', 'Aqua Web 2.0'], ['brutalist', 'Pop Brutalist'], ['steel', 'Steel Tactical'], ['parchment', 'Parchment']];
+    const route = decodeURIComponent(location.hash.slice(1)) || '#/';
+    const tiles = [];
+    for (const [id, name] of themes) for (const scheme of ['dark', 'light']) tiles.push([id, name, scheme]);
+    document.getElementById('grid').innerHTML = tiles.map(([id, name, scheme]) =>
+      `<figure><div class="frame"><iframe loading="eager" src="http://127.0.0.1:8090/?theme=${id}&scheme=${scheme}${route}"></iframe></div><figcaption>${name} <span>· ${scheme}</span></figcaption></figure>`).join('');
+  </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "api-health-monitor",
+  "version": "1.0.0",
+  "description": "Self-hosted API health monitor: a REST API and control panel that stores endpoint monitors, runs scheduled checks with assertions, charts latency, and logs unexpected responses.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "author": "Mirza Causevic (Kinetic Gain LLC)",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "demo": "node --disable-warning=ExperimentalWarning src/server.js --seed demo/monitors.json",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-reporter=spec \"test/*.test.js\"",
+    "build:pages": "node --disable-warning=ExperimentalWarning scripts/build-pages.js",
+    "transcripts": "node --disable-warning=ExperimentalWarning scripts/transcripts.js public/transcripts.json",
+    "preview:pages": "node scripts/serve-static.js _site 8095"
+  }
+}
