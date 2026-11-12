@@ -28,7 +28,6 @@ export function summarize(rows, { apdexT = 500, sloTarget = 0.999 } = {}) {
   const satisfied = lat.filter((x) => x <= apdexT).length;
   const tolerating = lat.filter((x) => x > apdexT && x <= 4 * apdexT).length;
   const availability = total ? (counts.up + counts.degraded) / total : null;
-  const allowed = total * (1 - sloTarget);
   return {
     checks: total,
     outcomes: counts,
@@ -46,13 +45,24 @@ export function summarize(rows, { apdexT = 500, sloTarget = 0.999 } = {}) {
       max: r1(lat.at(-1)),
       mean: r1(mean(lat)),
     },
-    error_budget: {
-      slo_target: sloTarget,
-      allowed_failures: r1(allowed),
-      failures: counts.down,
-      remaining: total ? Math.max(-1, Math.round((1 - counts.down / Math.max(allowed, 1e-9)) * 1000) / 1000) : null,
-    },
+    error_budget: errorBudget(total, counts.down, sloTarget),
   };
+}
+
+// Error budget over the window. A budget is only meaningful once the window
+// holds enough checks for the SLO to allow at least one failure: at a
+// 15-minute cadence a 24 h window has 96 checks, and a 99.5 % SLO allows 0.48
+// failures, so a single failure would read as "-100 % remaining". In that
+// case report `insufficient_data` and the number of checks needed instead of
+// a misleading percentage.
+export function errorBudget(total, failures, sloTarget) {
+  const allowed = total * (1 - sloTarget);
+  const minChecks = Math.ceil(Math.round((1 / (1 - sloTarget)) * 1e6) / 1e6);
+  const base = { slo_target: sloTarget, allowed_failures: Math.round(allowed * 100) / 100, failures, min_checks: minChecks };
+  if (!total) return { ...base, status: 'no_data', remaining: null };
+  if (allowed < 1) return { ...base, status: 'insufficient_data', remaining: null };
+  const remaining = Math.max(-1, Math.round((1 - failures / allowed) * 1000) / 1000);
+  return { ...base, status: failures > allowed ? 'exhausted' : 'ok', remaining };
 }
 
 export function phaseBreakdown(rows) {

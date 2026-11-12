@@ -22,7 +22,7 @@ The repository is built to show REST API design decisions in working code, each 
 | Push, not poll | Server-Sent Events at `/v1/events` with a 500-event ring buffer, so a reconnect with `Last-Event-ID` replays what was missed | [`events.js`](src/http/events.js) | `SSE...` |
 | Outbound safety | The SSRF guard runs inside the socket's DNS lookup, so the address that is validated is the address that is connected to | [`ssrf.js`](src/engine/ssrf.js) | `SSRF...` |
 
-`npm test` runs 32 tests (unit and real-HTTP integration) in about 1.5 seconds with Node's built-in runner.
+`npm test` runs 45 tests (unit and real-HTTP integration) in about 1.5 seconds with Node's built-in runner.
 
 ## What a check measures
 
@@ -32,7 +32,35 @@ Each check opens a cold connection (a fresh agent: no pooled socket, no TLS sess
 - **degraded**: only latency budgets failed (reachable and correct, but slow)
 - **down**: a transport error (`timeout`, `dns_failure`, `tls_error`, `blocked_target`...) or any non-latency assertion failed
 
-A run of `down` results that reaches the monitor's `failure_threshold` opens an incident; the next passing check resolves it. Healthy responses store no body. Unexpected ones keep a 2 KiB sample plus selected headers, which is what the response log shows.
+A run of `down` results that reaches the monitor's `failure_threshold` opens an incident; the next passing check resolves it. Healthy responses store no body. Unexpected ones keep what the monitor's `capture` setting allows:
+
+| `capture` | A failed check stores | Use for |
+| --- | --- | --- |
+| `sample` (default) | 2 KiB of body, selected headers, and the observed value in each failed assertion | Public endpoints |
+| `status_only` | Status, timings and which assertion failed, without observed values | Authenticated or internal APIs |
+| `none` | Status and timings only: failed assertions reduced to their index, no remote address, errors reduced to their code | Endpoints whose responses or network location must never be stored |
+
+Everything a check stores is served by the API and can reach a published snapshot, so the setting is the control point, not a display filter. Tightening it (`sample` to `status_only` or `none`) also scrubs the monitor's stored checks and incident causes, and the snapshot build re-applies each monitor's policy to the history it imports, so data published before the change stops being republished on the next deploy.
+
+### Error budget
+
+Each window reports `allowed_failures = checks × (1 − SLO)`. When that is below one, a single failure would read as "−100 % remaining", which says more about the sample size than the service. In that case the API returns `status: "insufficient_data"`, `remaining: null` and `min_checks` (200 for 99.5 %, 1,000 for 99.9 %), and the dashboard says so instead of drawing a gauge.
+
+## Alerts
+
+Incident transitions (`incident.opened`, `incident.resolved`) are sent to one webhook, signed per [Standard Webhooks](https://www.standardwebhooks.com/): `webhook-id`, `webhook-timestamp` and `webhook-signature: v1,<base64 HMAC-SHA256 of id.timestamp.body>`. The id is derived from the incident and transition, so a retried or re-run delivery carries the same id and the receiver can drop the duplicate. Individual checks never alert; a degraded (slow but correct) check never opens an incident.
+
+| Variable | Purpose |
+| --- | --- |
+| `AHM_WEBHOOK_URL` | https endpoint. A Slack or Discord URL is a credential, so it is read from the environment only: never stored, returned by the API or published. |
+| `AHM_WEBHOOK_SECRET` | `whsec_` + at least 24 random bytes in base64 (`echo whsec_$(openssl rand -base64 32)`). |
+| `AHM_WEBHOOK_FORMAT` | `json` (signed event envelope, default), `slack` (`text`) or `discord` (`content`, mentions disabled). In both chat formats `<`, `>`, `&` are escaped (Slack) and the cause, which can contain text chosen by the failing server, sits inside a code span, so it cannot inject mentions, masked links or formatting. |
+| `AHM_WEBHOOK_HOSTS` | Optional allowlist of receiver hostnames, e.g. `hooks.slack.com`. |
+| `AHM_PUBLIC_URL` | Optional base URL for the monitor link in the message. |
+
+Delivery goes through the same SSRF guard as checks, retries network errors, 408, 429 and 5xx at 0 s, 5 s, 30 s and 2 min (or the receiver's `Retry-After`, up to 60 s), stops on other 4xx, and holds at most 100 pending deliveries. The Pages notify job delivers in parallel with shorter backoff so it stays inside its 5-minute limit. The payload carries the incident (monitor, cause, failed-check count, times), never a response sample.
+
+On the live snapshot, the build records the transitions from its own run, and a separate `notify` job delivers them only after the deploy succeeds. The webhook secrets are scoped to that job, and without them it exits cleanly. To get alerts from the demo, add `AHM_WEBHOOK_URL` and `AHM_WEBHOOK_SECRET` as repository secrets (and optionally an `AHM_WEBHOOK_FORMAT` variable).
 
 ![Monitor detail: latency percentiles, error budget, availability strip, phase breakdown, histogram and the unexpected-response log](docs/images/monitor-detail.png)
 
@@ -98,7 +126,7 @@ GitHub Pages only serves static files, and a public write-capable monitor is an 
 3. starts the real API in-process and saves its responses as JSON files at the paths the dashboard's static client reads ([`static-path.js`](public/js/static-path.js)),
 4. deploys the result.
 
-Every JSON file on the site is a byte-for-byte response from the same code that serves `/v1`. The site is its own database. History before the first scheduled run came from a workstation probe (labelled `workstation` on each check).
+Every JSON file on the site is a byte-for-byte response from the same code that serves `/v1`, requested as an anonymous reader of a keyed server: the snapshot shows what a public reader of a self-hosted instance would see (query values and request bodies redacted), not the operator's view. Before upload the build fails if any file is not a web-servable type or contains a secret: any `AHM_SECRET_*`, `AHM_WEBHOOK_*` or API key value, or any stored monitor header value outside the safe-header allowlist, in raw, JSON-escaped or URL-encoded form. The site is its own database. History before the first scheduled run came from a workstation probe (labelled `workstation` on each check).
 
 The demo monitors are public endpoints intended for programmatic use (status pages, package registries, open data APIs), polled at most every 15 minutes with an identifying `User-Agent`. Only status, timing and, for failures, a 2 KiB sample are stored.
 
@@ -125,6 +153,7 @@ The layout collapses to one column on phones, and the monitor table scrolls insi
 ## Limits and trade-offs
 
 - **Single node.** The scheduler and rate limiter are in-process. Running two replicas against one database would double the checks. Horizontal scale needs a lease per monitor (for example a `locked_until` column) and a shared limiter.
+- **Webhook retries live in memory.** Delivery is best effort: a process restart drops pending retries. Ids are stable, so when a delivery is repeated (for example, a re-run notify job), receivers can drop the duplicate. A durable outbox table is the next step if alerts must survive restarts.
 - **Synchronous "run now".** `POST /v1/monitors/{id}/checks` waits for the check (bounded by the monitor's timeout, at most 30 s). An async `202 Accepted` with a status resource is the better fit if timeouts grow.
 - **Cold-connection timings.** Every check pays DNS + TCP + TLS. That matches a new client's experience but overstates latency for clients that reuse connections.
 - **Snapshot cadence.** GitHub delays scheduled workflows under load, and disables them after 60 days without repository activity.

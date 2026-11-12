@@ -1,6 +1,7 @@
 // Data access. All SQL lives here, parameterised; handlers never build SQL.
 import { newId } from '../ids.js';
 import { tx } from './index.js';
+import { scrubFailures, scrubCause } from '../engine/checker.js';
 
 const j = (v) => JSON.stringify(v);
 const p = (v, d) => (v == null ? d : JSON.parse(v));
@@ -25,6 +26,7 @@ export function rowToMonitor(row) {
     slo_target: row.slo_target,
     tags: p(row.tags, []),
     paused: !!row.paused,
+    capture: row.capture,
     version: row.version,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -38,12 +40,12 @@ export function insertMonitor(db, input, { id = newId('mon'), now = new Date() }
   const ts = iso(now);
   db.prepare(
     `INSERT INTO monitors (id, name, url, method, headers, body, interval_s, timeout_ms, follow_redirects,
-       assertions, failure_threshold, slo_target, tags, paused, version, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+       assertions, failure_threshold, slo_target, tags, paused, capture, version, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
   ).run(
     id, input.name, input.url, input.method, j(input.headers), input.body ?? null, input.interval_s,
     input.timeout_ms, input.follow_redirects ? 1 : 0, j(input.assertions), input.failure_threshold,
-    input.slo_target, j(input.tags), input.paused ? 1 : 0, ts, ts,
+    input.slo_target, j(input.tags), input.paused ? 1 : 0, input.capture ?? 'sample', ts, ts,
   );
   return getMonitor(db, id);
 }
@@ -103,14 +105,14 @@ export function updateMonitor(db, id, input, expectedVersion, now = new Date()) 
   const res = db
     .prepare(
       `UPDATE monitors SET name = ?, url = ?, method = ?, headers = ?, body = ?, interval_s = ?, timeout_ms = ?,
-         follow_redirects = ?, assertions = ?, failure_threshold = ?, slo_target = ?, tags = ?, paused = ?,
+         follow_redirects = ?, assertions = ?, failure_threshold = ?, slo_target = ?, tags = ?, paused = ?, capture = ?,
          version = version + 1, updated_at = ?
        WHERE id = ? AND version = ?`,
     )
     .run(
       input.name, input.url, input.method, j(input.headers), input.body ?? null, input.interval_s, input.timeout_ms,
       input.follow_redirects ? 1 : 0, j(input.assertions), input.failure_threshold, input.slo_target, j(input.tags),
-      input.paused ? 1 : 0, iso(now), id, expectedVersion,
+      input.paused ? 1 : 0, input.capture ?? 'sample', iso(now), id, expectedVersion,
     );
   return res.changes === 1 ? getMonitor(db, id) : null;
 }
@@ -288,7 +290,7 @@ export function recordCheck(db, monitor, check) {
     if (failed && !open && consecutive >= monitor.failure_threshold) {
       const id = newId('inc');
       const cause = check.error
-        ? `${check.error.code}: ${check.error.message}`
+        ? check.error.message && check.error.message !== check.error.code ? `${check.error.code}: ${check.error.message}` : check.error.code
         : check.failed_assertions[0]?.message || `HTTP ${check.status_code}`;
       db.prepare(
         `INSERT INTO incidents (id, monitor_id, opened_at, cause, first_check_id, last_check_id, failed_checks)
@@ -302,6 +304,25 @@ export function recordCheck(db, monitor, check) {
       event = { type: 'incident.resolved', incident: getIncident(db, open.id) };
     }
     return { monitor: getMonitor(db, monitor.id), event };
+  });
+}
+
+// Tightening a monitor's capture setting must also apply to what is already
+// stored, or the API (and every snapshot rebuilt from the published history)
+// keeps serving the bodies and values the operator just tried to contain.
+export function scrubHistory(db, monitorId, capture) {
+  if (capture === 'sample') return 0;
+  return tx(db, () => {
+    const rows = db.prepare("SELECT id, failed_assertions FROM checks WHERE monitor_id = ? AND (response_sample IS NOT NULL OR failed_assertions != '[]' OR remote_address IS NOT NULL OR error_message IS NOT NULL)").all(monitorId);
+    const upd = db.prepare(
+      capture === 'none'
+        ? 'UPDATE checks SET response_sample = NULL, failed_assertions = ?, remote_address = NULL, error_message = error_code WHERE id = ?'
+        : 'UPDATE checks SET response_sample = NULL, failed_assertions = ? WHERE id = ?',
+    );
+    for (const r of rows) upd.run(j(scrubFailures(capture, p(r.failed_assertions, []))), r.id);
+    const updI = db.prepare('UPDATE incidents SET cause = ? WHERE id = ?');
+    for (const i of db.prepare('SELECT id, cause FROM incidents WHERE monitor_id = ?').all(monitorId)) updI.run(scrubCause(capture, i.cause), i.id);
+    return rows.length;
   });
 }
 

@@ -250,6 +250,8 @@ export function registerRoutes(router, { db, config, scheduler, events, clock })
     if (errors) throw validationError(errors);
     const updated = repo.updateMonitor(db, m.id, value, m.version);
     if (!updated) throw httpError('precondition-failed', 'The monitor changed while this request was processed.');
+    const RANK = { sample: 0, status_only: 1, none: 2 };
+    if (RANK[updated.capture] > RANK[m.capture]) repo.scrubHistory(db, updated.id, updated.capture);
     if (updated.paused) scheduler?.unschedule(updated.id);
     else scheduler?.schedule(updated, { initial: m.paused });
     events.publish({ type: 'monitor.updated', data: present(updated, { anonymous: true }) });

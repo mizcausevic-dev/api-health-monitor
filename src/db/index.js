@@ -79,6 +79,9 @@ const MIGRATIONS = [
     PRIMARY KEY (principal, key)
   );
   `,
+  // v2: per-monitor control over what a failed check stores (and so what
+  // can ever be published).
+  `ALTER TABLE monitors ADD COLUMN capture TEXT NOT NULL DEFAULT 'sample';`,
 ];
 
 export function openDb(path = ':memory:') {

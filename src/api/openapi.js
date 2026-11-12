@@ -173,6 +173,7 @@ export const openApiDocument = {
           slo_target: { type: 'number', minimum: 0.5, maximum: 0.99999, default: 0.999 },
           tags: { type: 'array', maxItems: 10, items: { type: 'string', pattern: '^[a-z0-9][a-z0-9-]{0,31}$' } },
           paused: { type: 'boolean', default: false },
+          capture: { enum: ['sample', 'status_only', 'none'], default: 'sample', description: 'What a failed check stores. sample: 2 KiB body, selected headers and observed values. status_only: which assertion failed, no observed values. none: status and timings only. Use status_only or none for authenticated or private endpoints.' },
         },
       },
       Monitor: {
@@ -205,7 +206,7 @@ export const openApiDocument = {
       Stats: {
         type: 'object',
         properties: {
-          summary: { type: 'object', description: 'checks, outcomes, availability, apdex, latency_ms {p50,p90,p95,p99,...}, error_budget.' },
+          summary: { type: 'object', description: 'checks, outcomes, availability, apdex, latency_ms {p50,p90,p95,p99,...}, error_budget {slo_target, allowed_failures, failures, min_checks, status: ok|exhausted|insufficient_data|no_data, remaining (null unless the window allows at least one failure)}.' },
           phases_ms: { type: 'object' }, status_codes: { type: 'object', additionalProperties: { type: 'integer' } },
           histogram: { type: 'array', items: { type: 'object' } }, series: { type: 'array', items: { type: 'object' } },
         },

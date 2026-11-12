@@ -8,11 +8,12 @@
 //
 // Every JSON file on the site is a byte-for-byte API response produced by the
 // same code that serves /v1 — nothing is hand-assembled.
-import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, extname, join, relative } from 'node:path';
+import { randomBytes } from 'node:crypto';
+import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { openDb } from '../src/db/index.js';
-import { allMonitors } from '../src/db/repo.js';
+import { allMonitors, scrubHistory } from '../src/db/repo.js';
 import { startServer, seed } from '../src/server.js';
 import { Scheduler } from '../src/engine/scheduler.js';
 import { loadConfig } from '../src/config.js';
@@ -20,6 +21,7 @@ import { PROBLEM_TYPES } from '../src/http/problem.js';
 import { staticPathFor } from '../public/js/static-path.js';
 import { exportHistory, importHistory, readJson } from './history.js';
 import { recordTranscripts } from './transcripts.js';
+import { unservableFiles, secretValues, secretHits } from './publication-gate.js';
 
 const { values: args } = parseArgs({
   options: {
@@ -29,6 +31,9 @@ const { values: args } = parseArgs({
     'run-checks': { type: 'boolean', default: false },
     probe: { type: 'string', default: 'gh-actions' },
     'history-days': { type: 'string', default: '8' },
+    // Incident transitions from THIS run, written outside the site for the
+    // post-deploy notify job. Never inside --out.
+    'alerts-out': { type: 'string' },
   },
 });
 
@@ -73,9 +78,16 @@ const config = loadConfig(process.env, { allowPrivateTargets: false, probe: args
 seed(db, 'demo/monitors.json', config);
 const prev = await loadPrevious();
 log('history imported', { source: prev.source, ...importHistory(db, prev.data, { sinceIso }) });
+// Published history predates any capture tightening in demo/monitors.json;
+// re-apply the current policy so the next deploy stops republishing it.
+for (const m of allMonitors(db)) if (m.capture !== 'sample') log('history scrubbed', { monitor: m.id, capture: m.capture, rows: scrubHistory(db, m.id, m.capture) });
 
+const alerts = [];
 if (args['run-checks']) {
   const scheduler = new Scheduler({ db, config });
+  scheduler.on('event', (e) => {
+    if (e.type === 'incident.opened' || e.type === 'incident.resolved') alerts.push(e);
+  });
   const results = await Promise.all(allMonitors(db).map((m) => scheduler.execute(m)));
   log('checks complete', { results: results.map((c) => `${c.outcome}:${c.status_code ?? c.error?.code}:${c.timings.total_ms}ms`) });
 }
@@ -85,7 +97,11 @@ cpSync('public', OUT, { recursive: true });
 const indexPath = join(OUT, 'index.html');
 writeFileSync(indexPath, readFileSync(indexPath, 'utf8').replace('<meta name="ahm-mode" content="live">', '<meta name="ahm-mode" content="static">'));
 
-const server = await startServer({ port: 0, scheduler: false, logRequests: false, apiKey: '', rateLimit: { capacity: 1e6, windowS: 60 } }, { db });
+// The snapshot is rendered as an ANONYMOUS reader of a keyed server, so it
+// contains exactly what a public reader of a self-hosted instance would see
+// (query values and request bodies redacted), not the operator's view.
+const buildKey = randomBytes(24).toString('base64url');
+const server = await startServer({ port: 0, scheduler: false, logRequests: false, apiKey: buildKey, publicRead: true, rateLimit: { capacity: 1e6, windowS: 60 } }, { db });
 try {
   const paths = ['/v1/openapi.json', '/v1/incidents?limit=100'];
   for (const w of ['6h', '24h', '7d']) paths.push(`/v1/overview?window=${w}`);
@@ -125,13 +141,15 @@ writeFileSync(join(OUT, 'errors.html'), `<!doctype html>
 <main><div class="page-head"><div><h1>Error catalogue</h1><p>Every error is <code>application/problem+json</code> (RFC 9457). The <code>type</code> member links to an entry below.</p></div></div>
 <div class="grid">${Object.entries(PROBLEM_TYPES).map(([slug, d]) => `<section class="card span-6" id="${slug}"><div class="card-head"><h2>${esc(d.title)}</h2><span class="status ${d.status >= 500 ? 'down' : 'degraded'}">${d.status}</span></div><p><code>${slug}</code></p><p>${md(d.help)}</p></section>`).join('')}</div></main></body></html>
 `);
-// Publication gate (allowlist, not denylist): anything that is not a
-// web-servable file type aborts the build before the artifact is uploaded.
-const SERVABLE = new Set(['.html', '.css', '.js', '.json', '.svg', '.png', '.ico']);
-const bad = readdirSync(OUT, { recursive: true, withFileTypes: true })
-  .filter((d) => d.isFile())
-  .map((d) => join(d.parentPath ?? d.path, d.name))
-  .map((f) => relative(OUT, f))
-  .filter((rel) => !SERVABLE.has(extname(rel).toLowerCase()) || rel.split(/[\\/]/).some((seg) => seg.startsWith('.')));
-if (bad.length) throw new Error(`publication gate: refusing to publish ${bad.join(', ')}`);
-log('site built', { out: OUT, publication_gate: 'pass' });
+// Publication gates: only web-servable files, and no secret value anywhere.
+const unservable = unservableFiles(OUT);
+if (unservable.length) throw new Error(`publication gate: refusing to publish ${unservable.join(', ')}`);
+const secrets = secretValues({ ...process.env, AHM_API_KEY: buildKey }, allMonitors(db));
+if (secrets.skipped.length) log('secret gate: values too short to scan', { labels: secrets.skipped });
+const leaks = secretHits(OUT, secrets);
+if (leaks.length) throw new Error(`secret gate: refusing to publish (${leaks.join('; ')})`);
+if (args['alerts-out']) {
+  writeFileSync(args['alerts-out'], JSON.stringify(alerts.slice(0, 50)));
+  log('alerts recorded', { count: alerts.length, file: args['alerts-out'] });
+}
+log('site built', { out: OUT, publication_gate: 'pass', secret_gate: 'pass', secret_values_scanned: secrets.length });

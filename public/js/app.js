@@ -281,10 +281,12 @@ async function renderMonitor(id, token) {
       <div id="m-gauge" style="display:grid;place-items:center"></div>
       <div class="stat-row" style="margin-top:8px">
         <div><span>Availability</span><b class="tone-${tone(sum.availability, m.slo_target)}">${pct(sum.availability)}</b></div>
-        <div><span>Failed</span><b>${budget.failures}</b></div>
-        <div><span>Allowed</span><b>${budget.allowed_failures ?? '–'}</b></div>
+        <div><span>Failed</span><b>${esc(budget.failures)}</b></div>
+        <div><span>Allowed</span><b>${esc(budget.allowed_failures ?? '–')}</b></div>
       </div>
-      <p class="card-foot">Failures allowed by the SLO over ${esc(win)}: ${budget.allowed_failures ?? 0} of ${sum.checks} checks. Degraded (slow but correct) checks count as available.</p>
+      <p class="card-foot">${budget.status === 'insufficient_data'
+        ? `Not enough checks to measure: ${esc(sum.checks)} in ${esc(win)}, but a ${esc(pct(budget.slo_target, 2))} SLO needs at least ${esc(budget.min_checks)} before even one failure is allowed. Pick a longer window.`
+        : `Failures allowed by the SLO over ${esc(win)}: ${esc(budget.allowed_failures ?? 0)} of ${esc(sum.checks)} checks. Degraded (slow but correct) checks count as available.`}</p>
     </div>
     <div class="card span-12">
       <div class="card-head"><h2>Availability by interval</h2><span class="sub">${sum.outcomes.up} up · ${sum.outcomes.degraded} degraded · ${sum.outcomes.down} down</span></div>
@@ -319,7 +321,11 @@ async function renderMonitor(id, token) {
     </div>
   </section>`;
   bindWindowSwitch();
-  gauge($('#m-gauge'), { value: budget.remaining, label: budget.remaining == null ? '–' : `${Math.round(budget.remaining * 100)}%`, sub: 'budget remaining' });
+  gauge($('#m-gauge'), {
+    value: budget.remaining,
+    label: budget.remaining == null ? 'n/a' : `${Math.round(budget.remaining * 100)}%`,
+    sub: budget.status === 'insufficient_data' ? `needs ≥ ${budget.min_checks} checks` : budget.status === 'no_data' ? 'no checks yet' : 'budget remaining',
+  });
   lineChart($('#m-latency'), {
     points: s.series,
     series: [
@@ -487,7 +493,7 @@ function openForm(monitor = null, etag = null) {
   const rows = $('#assertion-rows');
   rows.innerHTML = '';
   if (monitor) {
-    for (const k of ['name', 'url', 'method', 'interval_s', 'timeout_ms', 'failure_threshold', 'slo_target']) form.elements[k].value = monitor[k];
+    for (const k of ['name', 'url', 'method', 'interval_s', 'timeout_ms', 'failure_threshold', 'slo_target', 'capture']) form.elements[k].value = monitor[k];
     form.elements.tags.value = monitor.tags.join(', ');
     form.elements.follow_redirects.checked = monitor.follow_redirects;
     form.elements.paused.checked = monitor.paused;
@@ -522,6 +528,7 @@ function formValue() {
     tags: f.tags.value.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean),
     follow_redirects: f.follow_redirects.checked,
     paused: f.paused.checked,
+    capture: f.capture.value,
     assertions: readAssertions(),
   };
 }

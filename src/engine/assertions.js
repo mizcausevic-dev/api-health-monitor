@@ -119,6 +119,8 @@ export function evaluateAssertions(assertions, ctx) {
         // response-sample cap.
         actual: a.source === 'body' ? undefined : boundedActual(actual),
         message: note ? `${subject}: ${note}` : `expected ${subject} ${expectation}, got ${a.source === 'body' ? 'body without match' : show(actual)}`,
+        // Same message without the observed value, for capture=status_only.
+        expected: note ? `${subject}: ${note}` : `expected ${subject} ${expectation}`,
       });
     }
   });

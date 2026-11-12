@@ -204,7 +204,40 @@ export async function runCheck(monitor, { allowPrivate = false, maxBodyBytes = 2
     remote_address: out.timings?.remote ?? null,
     redirects,
     probe,
-    failed_assertions: failures,
-    response_sample,
+    ...applyCapture(monitor.capture, failures, response_sample, { error, remote_address: out.timings?.remote ?? null }),
   };
+}
+
+// What a failed check is allowed to keep. Everything kept here is served by
+// the API and can end up in the public snapshot, so monitors that hit
+// authenticated or private endpoints should use status_only or none.
+//   sample       2 KiB body + selected headers + observed values (default)
+//   status_only  status, timings and which assertion failed; no observed values
+//   none         status and timings only: failed assertions reduced to their
+//                index, no remote address, error reduced to its code
+export function applyCapture(capture = 'sample', failures, sample, { error = null, remote_address = null } = {}) {
+  if (capture === 'sample') return { failed_assertions: failures, response_sample: sample, error, remote_address };
+  return {
+    failed_assertions: scrubFailures(capture, failures),
+    response_sample: null,
+    error: capture === 'none' && error ? { code: error.code, message: error.code } : error,
+    remote_address: capture === 'none' ? null : remote_address,
+  };
+}
+
+// Also applied to rows stored before a monitor's capture setting was
+// tightened (rows written before `expected` existed carry only `message`).
+const withoutObserved = (msg = '') => msg.replace(/, got [\s\S]*$/, '');
+export function scrubFailures(capture, failures) {
+  if (capture === 'status_only') {
+    return failures.map(({ index, source, property, op, target, expected, message }) => ({ index, source, ...(property ? { property } : {}), op, ...(target !== undefined ? { target } : {}), message: expected ?? withoutObserved(message) }));
+  }
+  if (capture === 'none') return failures.map(({ index, source }) => ({ index, source, message: `assertion ${index + 1} (${source}) failed` }));
+  return failures;
+}
+
+export function scrubCause(capture, cause) {
+  if (capture === 'status_only') return withoutObserved(cause);
+  if (capture === 'none') return cause.startsWith('expected ') ? 'assertion failed' : cause.split(':')[0];
+  return cause;
 }

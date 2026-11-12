@@ -30,7 +30,9 @@ export const DEFAULTS = {
   slo_target: 0.999,
   tags: [],
   paused: false,
+  capture: 'sample',
 };
+export const CAPTURE = ['sample', 'status_only', 'none'];
 
 const FIELDS = new Set(['name', 'url', ...Object.keys(DEFAULTS)]);
 export const READ_ONLY = new Set(['id', 'version', 'created_at', 'updated_at', 'state', 'links', 'last_status', 'last_checked_at', 'consecutive_failures']);
@@ -99,6 +101,7 @@ export function validateMonitor(input, { allowPrivateTargets = false } = {}) {
   if (!isInt(v.failure_threshold) || v.failure_threshold < 1 || v.failure_threshold > 10) err('/failure_threshold', 'Integer between 1 and 10.');
   if (typeof v.slo_target !== 'number' || !(v.slo_target >= 0.5 && v.slo_target <= 0.99999)) err('/slo_target', 'Number between 0.5 and 0.99999.');
   if (typeof v.paused !== 'boolean') err('/paused', 'Boolean.');
+  if (!CAPTURE.includes(v.capture)) err('/capture', `One of ${CAPTURE.join(', ')}.`);
 
   if (!Array.isArray(v.tags) || v.tags.length > 10) err('/tags', 'Array of at most 10 tags.');
   else v.tags.forEach((t, i) => typeof t === 'string' && TAG.test(t) ? null : err(`/tags/${i}`, 'Lowercase letters, digits and hyphens, 1-32 characters.'));
@@ -122,6 +125,7 @@ export function validateMonitor(input, { allowPrivateTargets = false } = {}) {
       slo_target: v.slo_target,
       tags: [...new Set(v.tags)],
       paused: v.paused,
+      capture: v.capture,
     },
   };
 }
